@@ -1,0 +1,166 @@
+<html>
+<head>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+	<script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap/bootstrap.min.css') }}">
+	<script src="{{ url_for('static', filename='js/bootstrap/bootstrap.min.js') }}"></script>
+	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+	<title>Auto Project</title>
+</head>
+<body>
+    <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+  <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Auto Project</a>
+  <input class="form-control form-control-dark w-100" type="text" placeholder="Search" aria-label="Search">
+  <ul class="navbar-nav px-3">
+    <li class="nav-item text-nowrap">
+      <a class="nav-link" href="#">Sign out</a>
+    </li>
+  </ul>
+</nav>
+
+<div class="container-fluid">
+  <div class="row">
+    <nav class="col-md-1 d-none d-md-block bg-light sidebar">
+      <div class="sidebar-sticky">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">
+              <span data-feather="home"></span>
+              Real Time Data <span class="sr-only">(current)</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="file"></span>
+              Orders
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="shopping-cart"></span>
+              Products
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="users"></span>
+              Customers
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="bar-chart-2"></span>
+              Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="layers"></span>
+              Integrations
+            </a>
+          </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+          <span>Saved reports</span>
+          <a class="d-flex align-items-center text-muted" href="#" aria-label="Add a new report">
+            <span data-feather="plus-circle"></span>
+          </a>
+        </h6>
+        <ul class="nav flex-column mb-2">
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="file-text"></span>
+              Current month
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="file-text"></span>
+              Last quarter
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="file-text"></span>
+              Social engagement
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span data-feather="file-text"></span>
+              Year-end sale
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <main role="main" class="col-md-10 ml-sm-auto col-lg-11 px-4">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Real Time Data</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="btn-group mr-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+            <span data-feather="calendar"></span>
+            This week
+          </button>
+        </div>
+      </div>
+				<script>
+					let updateField = function (id, data) {
+						for (let i =0; i < 8; i++) {
+							if (i < data.length) {
+								$('#arb'+ id + ' .data'+ i).html(data[i]);
+							} else $('#arb'+ id + ' .data'+ i).html("");
+						}
+					};
+					$(document).ready(function(){
+						let ids = {};
+
+		     		var socket = io.connect('http://' + document.domain + ':' + location.port + '/');
+		     		socket.on('my response', function(msg) {
+							
+							if (! ids.hasOwnProperty(msg.arbitration_id)) {
+								ids[msg.arbitration_id] = {"data": msg.data};
+								$("#bus0").append("<tr id='arb"+msg.arbitration_id+"'><td>"+ msg.arbitration_id +"</td><td><span class='data0'></span><span class='data1'></span><span class='data2'></span><span class='data3'></span><span class='data4'></span><span class='data5'></span><span class='data6'></span><span class='data7'></span></td><td></td></tr>");
+							}
+							updateField(msg.arbitration_id, msg.data);
+		     		});
+
+				    $('form#emit').submit(function(event) {
+				    	socket.emit('my event', {data: $('#emit_data').val()});
+				      return false;
+				    });
+				    $('form#broadcast').submit(function(event) {
+				    	socket.emit('my broadcast event', {data: $('#broadcast_data').val()});
+				      return false;
+				    });
+				 	});
+		      </script>
+			<!-- CAN TABLE -->
+      <div class="table-responsive">
+        <table class="table table-striped table-sm">
+          <thead>
+            <tr>
+              <th>ARB ID</th>
+              <th>DATA</th>
+              <th>ASCII</th>
+            </tr>
+          </thead>
+          <tbody id="bus0">
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+	</body>
+</html>

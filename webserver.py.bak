@@ -1,0 +1,77 @@
+from flask import Flask, render_template
+from flask_restful import Resource, Api, reqparse
+from flask_socketio import SocketIO, emit
+import time
+import datetime
+
+import can
+from threading import Thread
+import sys
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'ThisIsMySecretW3llGu4rded!@All!'
+app.config['DEBUG'] = True
+socketio = SocketIO(app, async_mode=None, logger=True, engineio_logger=True, broadcast=True)
+api = Api(app)
+
+class canReader(Thread):
+  def __init__(self, localBus, socket):
+    Thread.__init__(self)
+    self.bus = localBus
+    self.socket = socket
+    self.ids = {}
+    self.minDelay = 100;
+
+  def run(self):
+    while True:
+      msg = self.bus.recv(0.0)
+      if msg:
+        timer = time.time()
+        id = hex(msg.arbitration_id)
+        if (not hasattr(self.ids, id) or (self.ids[id]["timer"] + self.minDelay) < timer):
+          if (not hasattr(self.ids, id)):
+            self.ids[id] = {"timer": timer}
+          else:
+            self.ids[id]["timer"] = timer
+          socketio.emit('my response', {'arbitration_id': hex(msg.arbitration_id), 'data':list(msg.data)})
+
+class CheckInventory(Resource):
+  def get(self):
+    week = datetime.date.today().isocalendar()[1]
+    now = datetime.datetime.now()
+    year = now.year
+    threshold = (year * 100) + week
+    if (now.hour >= 9 and now.hour <= 10) or (now.hour >= 14 or now.hour <=15):
+      db = sqlite3.connect("batteries.db")
+      c = db.cursor()
+      c.execute("SELECT id, name FROM inventory WHERE rack = ? AND lastCharge < ?", ((week%8) + 1, threshold))
+      row = c.fetchone()
+      items = []
+      while row != None:
+        items.append({row[0]: row[1]})
+        row = c.fetchone()
+      db.close()
+      # Add GPIO mgmt
+    return {"items": items, "hour": now.hour, "minute": now.minute}
+
+api.add_resource(CheckInventory, '/CheckInventory')
+
+@app.route('/')
+def indexPage():
+  return render_template("template.html")
+
+@socketio.on('connect', namespace='/')
+def test_connect():
+    emit('my response', {'data': {"header":"I am Groot !"}})
+
+@socketio.on('disconnect', namespace='/')
+def test_disconnect():
+    print('Client disconnected')
+
+if __name__ == '__main__':
+  interface = "vcan0"
+  bus = can.interface.Bus(channel=interface, bustype='socketcan_native')
+  # Création des threads
+  thread_1 = canReader(bus, socketio)
+  thread_1.start()
+  socketio.run(app)
