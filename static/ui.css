@@ -1,0 +1,228 @@
+/*QPushButton {
+    background-color: red;
+    border-style: outset;
+    border-width: 2px;
+    border-color: beige;
+}*/
+
+*[cssClass="mainMenu"] {
+	background-color:#343a40;
+	padding:1em 1em 0.5em 0em;
+}
+
+*[cssClass="appTitle"] {
+	color:rgba(255,255,255,0.5);
+	font-weight:bold;
+	padding-top:1em;
+	padding-bottom:0.5em;
+}
+
+QPushButton[cssClass="btnLogo"] {
+	background-color:#545a60;
+	padding:default;
+	margin-top:0.5em;
+	margin-right:1em;
+	margin-left:1em;
+}
+
+QPushButton[cssClass="btnIcon"] {
+	background-color:#545a60;
+	padding:default;
+	margin-top:0.5em;
+	margin-right:1em;
+	margin-left:1em;
+}
+
+QPushButton[cssClass="menuBtn"] {
+	background-color:#343a40;
+	padding:default;
+	margin-top:0.5em;
+	margin-right:1em;
+	margin-left:0em;
+}
+QPushButton[cssClass="menuBtn"]:hover {
+	background-color:#444a50;
+	padding:default;
+	margin-top:0.5em;
+	margin-right:1em;
+	margin-left:0em;
+}
+
+QPushButton[cssClass="menuBtnMain"] {
+	background-color:#343a40;
+	padding:default;
+	margin-top:0.5em;
+	margin-right:0.5em;
+	margin-left:1em;
+}
+QPushButton[cssClass="menuBtnMain"]:hover {
+	background-color:#444a50;
+	padding:default;
+	margin-top:0.5em;
+	margin-right:0.5em;
+	margin-left:1em;
+}
+
+*[cssClass="modalWindow"] {
+	padding:0 0 0 0;
+	margin:0 0 0 0;
+	width:100%;
+}
+
+*[cssClass="modalTitle"]  {
+	margin: 0 0 0 0;
+	padding: 0.5em 1em 2em 1em;
+	border-bottom:1px solid rgba(0,0,0,.125);
+}
+
+*[cssClass="modalBody"] {
+	padding:0 0 0 0 ;
+	margin-left:0;
+	margin-right:0;
+	/*border-top:1px solid rgba(0,0,0,.125);*/
+}
+
+*[cssClass="modalFooter"]  {
+
+}
+
+*[cssClass="bold"] {
+	font-weight:bold;
+}
+
+*[cssClass="btn-primary"] {
+	background-color: #007bff;
+	border: 1px solid #007bff;
+	color:#FFFFFF;
+	border-top-left-radius: 0.25em;
+	border-top-right-radius: 0.25em;
+	border-bottom-right-radius: 0.25em;
+	border-bottom-left-radius: 0.25em;
+	padding-top: 0.375em;
+	padding-right: 0.75em;
+	padding-bottom: 0.375em;
+	padding-left: 0.75em;
+}
+
+*[cssClass="btn-primary"]:hover {
+	background-color: #0069d9;
+	border: 1px solid #0062cc;
+}
+
+*[cssClass="btn-secondary"] {
+	background-color: #6c757d;
+	border: 1px solid #6c757d;
+	color:#FFFFFF;
+	border-top-left-radius: 0.25em;
+	border-top-right-radius: 0.25em;
+	border-bottom-right-radius: 0.25em;
+	border-bottom-left-radius: 0.25em;
+
+	padding-top: 0.375em;
+	padding-right: 0.75em;
+	padding-bottom: 0.375em;
+	padding-left: 0.75em;
+}
+
+*[cssClass="btn-secondary"]:hover {
+	background-color: #5a6268;
+	border: 1px solid #545b62;
+}
+
+*[cssClass="btn-success"] {
+	background-color: #28a745;
+	border: 1px solid #28a745;
+	color:#FFFFFF;
+	border-top-left-radius: 0.25em;
+	border-top-right-radius: 0.25em;
+	border-bottom-right-radius: 0.25em;
+	border-bottom-left-radius: 0.25em;
+
+	padding-top: 0.375em;
+	padding-right: 0.75em;
+	padding-bottom: 0.375em;
+	padding-left: 0.75em;
+}
+
+*[cssClass="btn-success"]:hover {
+	background-color: #218838;
+	border: 1px solid #1e7e34;
+}
+
+*[cssClass="btn-danger"] {
+	color:#fff;
+	background-color: #dc3545;
+	border-top-left-radius: 0.25em;
+	border-top-right-radius: 0.25em;
+	border-bottom-right-radius: 0.25em;
+	border-bottom-left-radius: 0.25em;
+	border:1px solid #dc3545;
+
+	padding-top: 0.375em;
+	padding-right: 0.75em;
+	padding-bottom: 0.375em;
+	padding-left: 0.75em;
+}
+
+*[cssClass="btn-danger"]:hover {
+	background-color: #c82333;
+	border:1px solid;
+	border-color: #bd2130;
+}
+
+*[cssClass="btn-disabled"] {
+	border:1px solid  #e2e2e2;
+	background-color: #e2e2e2;
+	border-top-left-radius: 0.25em;
+	border-top-right-radius: 0.25em;
+	border-bottom-right-radius: 0.25em;
+	border-bottom-left-radius: 0.25em;
+
+	padding-top: 0.375em;
+	padding-right: 0.75em;
+	padding-bottom: 0.375em;
+	padding-left: 0.75em;
+}
+
+*[cssClass="text-danger"] {
+	color:#dc3545;
+}
+
+*[cssClass="card"] {
+}
+
+*[cssClass="cardBordered"] {
+	background-color: #fff;
+	background-clip: border-box;
+	border: 1px solid rgba(0,0,0,.125);
+	border-radius: .25em;
+	padding:.5em .5em;
+}
+
+/*#cardHeaderFilter, #cardHeaderDisplay*/
+*[cssClass="cardHeader"] {
+	border: 1px solid rgba(0,0,0,.125);
+	background-color:rgba(0,0,0,.03);
+	border-top-right-radius: .25em;
+	border-top-left-radius: .25em;
+	margin:0 0 0 0;
+}
+
+*[cssClass="cardLogo"] {
+	background:#FFFFFF;
+	border-radius:0;
+	border-right:1px solid rgba(0,0,0,.125);
+	border-left:1px solid rgba(0,0,0,.125);
+	margin-top:0px;
+	margin-bottom:0px;
+	padding-top:.5em;
+}
+
+*[cssClass="cardBody"] {
+	background:#FFFFFF;
+	border-radius:0;
+	border-right:1px solid rgba(0,0,0,.125);
+	border-bottom:1px solid rgba(0,0,0,.125);
+	border-left:1px solid rgba(0,0,0,.125);
+	margin-top:0px;
+}

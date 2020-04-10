@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AnalysisParams</class>
+ <widget class="QWidget" name="AnalysisParams">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>305</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string/>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="labelVehicleType">
+     <property name="text">
+      <string>VEHICLE_TYPE</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="fldVehicleType"/>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="labelManufacturer">
+     <property name="text">
+      <string>MANUFACTURER</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="fldManufacturer"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="labelModel">
+     <property name="text">
+      <string>MODEL</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="fldModel"/>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="labelYear">
+     <property name="text">
+      <string>YEAR</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QLineEdit" name="fldYear">
+     <property name="maximumSize">
+      <size>
+       <width>80</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="maxLength">
+      <number>4</number>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="labelEngine">
+     <property name="text">
+      <string>ENGINE</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="fldEngine"/>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="labelVIN">
+     <property name="text">
+      <string>VIN</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QLineEdit" name="fldVIN">
+     <property name="maximumSize">
+      <size>
+       <width>300</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="maxLength">
+      <number>24</number>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0" colspan="2">
+    <widget class="Line" name="line1">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="labelMode">
+     <property name="text">
+      <string>PRIVACY_MODE</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QComboBox" name="fldPrivacyMode"/>
+   </item>
+   <item row="8" column="1">
+    <widget class="QLabel" name="labelModeCommnt">
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <italic>true</italic>
+      </font>
+     </property>
+     <property name="text">
+      <string>PRIVACY_MODE_COMMENT</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
