@@ -2026,6 +2026,52 @@ border-radius:0;</string>
    <header>modules.FrameWindow.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>btnBusKln</tabstop>
+  <tabstop>btnAnalysis</tabstop>
+  <tabstop>btnDevices</tabstop>
+  <tabstop>btnServer</tabstop>
+  <tabstop>btnNotification</tabstop>
+  <tabstop>btnConfig</tabstop>
+  <tabstop>btnProfile</tabstop>
+  <tabstop>loginLogo</tabstop>
+  <tabstop>fldUsername</tabstop>
+  <tabstop>fldProfileName</tabstop>
+  <tabstop>fldPassword</tabstop>
+  <tabstop>fldConfirmPassword</tabstop>
+  <tabstop>btnLogin</tabstop>
+  <tabstop>btnLoadAnalysis</tabstop>
+  <tabstop>btnNewAnalysis</tabstop>
+  <tabstop>pushButton_3</tabstop>
+  <tabstop>srv</tabstop>
+  <tabstop>btnEditVehicle</tabstop>
+  <tabstop>btnBusCan</tabstop>
+  <tabstop>btnBusLin</tabstop>
+  <tabstop>btnMainMenu</tabstop>
+  <tabstop>stat</tabstop>
+  <tabstop>btnCmdEditor</tabstop>
+  <tabstop>btnShowRightMenu</tabstop>
+  <tabstop>msgTable</tabstop>
+  <tabstop>rightMenu</tabstop>
+  <tabstop>btnCollapseDisplay</tabstop>
+  <tabstop>checkMaskStatic</tabstop>
+  <tabstop>comboKeepDuration</tabstop>
+  <tabstop>btnSnapClear</tabstop>
+  <tabstop>btnSnap</tabstop>
+  <tabstop>btnCollapseSession</tabstop>
+  <tabstop>btnSessionLoad</tabstop>
+  <tabstop>btnSessionRec</tabstop>
+  <tabstop>btnSessionLive</tabstop>
+  <tabstop>btnSessionSave</tabstop>
+  <tabstop>btnSessionPause</tabstop>
+  <tabstop>btnSessionReplay</tabstop>
+  <tabstop>btnSessionForensic</tabstop>
+  <tabstop>btnSessionNew</tabstop>
+  <tabstop>btnCollapseFilter</tabstop>
+  <tabstop>idFilter</tabstop>
+  <tabstop>comboSignalsSrc</tabstop>
+  <tabstop>pushButton_4</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

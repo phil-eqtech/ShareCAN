@@ -127,7 +127,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.btnSessionNew.clicked.connect(lambda: self.sessionNew())
 
     self.btnSnap.clicked.connect(lambda: self.snapBus())
-    self.btnSnap.clicked.connect(lambda: self.snapBus(clear=True))
+    self.btnSnapClear.clicked.connect(lambda: self.snapBus(clear=True))
 
     self.comboKeepDuration.setDisabled(True)
     for k in DISPLAY.DURATION:
@@ -519,10 +519,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
   def snapBus(self, clear=False):
     for bus in self.activeBus:
       for id in self.activeBus[bus]['idValues']:
-        if clear == True:
-          self.activeBus[bus]['idValues'][id]['snapValues'] = {}
+        if clear == False:
+          self.activeBus[bus]['idValues'][id]['snapValues'] = self.activeBus[bus]['idValues'][id]['values'].copy()
         else:
-          self.activeBus[bus]['idValues'][id]['snapValues'] = self.activeBus[bus]['idValues'][id]['values']
+          self.activeBus[bus]['idValues'][id]['snapValues'] = {}
 
   #
   # SESSION Methods

@@ -194,7 +194,8 @@ class AnalysisParamsDialog(ModelDialog):
       entry = modelCursor[0]
       if 'models' in entry:
         for model in entry['models']:
-          modelList.append(model['name'])
+          if 'name' in model:
+            modelList.append(model['name'])
 
     modelCompleter = QCompleter(modelList, self.body.fldModel)
     modelCompleter.setCaseSensitivity(Qt.CaseInsensitive)

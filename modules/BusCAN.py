@@ -247,10 +247,8 @@ class BusCAN:
 
       if not byteRef in prevValues['values']:
         self.idValues[id]['values'][byteRef] = []
-        self.idValues[id]['snapValues'][byteRef] = []
       if not msg[i] in self.idValues[id]['values'][byteRef]:
         self.idValues[id]['values'][byteRef].append(msg[i])
-        self.idValues[id]['snapValues'][byteRef].append(msg[i])
 
       results.append(byteDetails)
     return [results, hasChangedValue]

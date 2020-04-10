@@ -1,12 +1,14 @@
 sudo apt-get install mongodb
 sudo apt-get install can-utils
-sudo apt-get install pip3
+sudo apt-get install python3-pip
+sudo apt-get install python3-pyqt5
 
 pip3 install pyqt5
 pip3 install bcrypt
 pip3 install pymongo
 pip3 install uuid
 pip3 install qtawesome
+pip3 install python-can
 
 
 mongo ShareCAN --eval 'db.devices.update({"name" : "Pican Duo"},{"name" : "Pican Duo", "interfaces" : [ { "type" : "can", "mode" : "slcan", "label" : "CAN A" }, { "type" : "can", "mode" : "slcan", "label" : "CAN B" } ], "ref" : "SPI", "builtin" : true }, true)'
