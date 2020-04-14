@@ -70,7 +70,8 @@ class BusCAN:
     if self.bus['mode'] == 'slcan' and self.bus['builtin'] == False:
       self.callShellCmdIp('down')
       self.closeSlcan()
-
+    elif self.bus['mode'] == 'builtincan':
+      self.callShellCmdIp('down')
     self.bus['active'] = False
 
   def callShellCmdIp(self, status = 'up'):
@@ -96,6 +97,10 @@ class BusCAN:
       return False
 
   def setBuiltinSpeed(self):
+    args = ['sudo','/sbin/ip', 'link', 'set', 'down', self.bus['bus']]
+    p = subprocess.Popen(args)
+    p.communicate()
+    time.sleep(0.2)
     args = ['sudo','/sbin/ip', 'link', 'set', 'up', self.bus['bus'], 'type','can','bitrate', str(math.floor(self.bus['speed']*1000))]
     p = subprocess.Popen(args)
     p.communicate()

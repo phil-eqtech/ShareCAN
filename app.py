@@ -88,7 +88,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     # Login - BTN signals
     # If no user is set, the user is prompted for his desired login/pwd
-    userExists = self.db.config.count_documents({"localUsername":{"$exists":True}})
+    userCursor = self.db.config.find({"localUsername":{"$exists":True}})
+    userExists = userCursor.count() # Could not use count_documents for old pymongo compatibility 
     if userExists > 0:
       self.fldConfirmPassword.hide()
       self.labelProfileName.hide()

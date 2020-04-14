@@ -48,6 +48,9 @@ SUPPORTED_SPEED_UNIT = {"can":"Kbps"}
 
 SPECIAL_MANUFACTURER = ["TEST"]
 
+# If session frame above limit, slice inserts 
+FRAME_RECORD_GROUP_LIMIT = 8000
+
 # Frame window params
 FRAME_WINDOW_MODEL = [{'label':'ID', 'field':'id', 'w':5},{'label':'BUS', 'field':'busName','w':5},
                       {'label':'ECU', 'field':'id','w':5}, {'label':'DATA', 'field':'msg','w':180},
