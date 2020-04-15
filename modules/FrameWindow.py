@@ -1,7 +1,12 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+
 import time
+import logging
+from bitstring import BitArray
+
+from modules.Constants import *
 
 class TableView(QTableView):
   def __init__(self, *args, **kwargs):
@@ -72,7 +77,7 @@ class CustomDelegate(QStyledItemDelegate):
 
 
 class framesTableModel(QAbstractTableModel):
-    def __init__(self, columnsDef, refreshRate = 0.1, frames=[], parent=None):
+    def __init__(self, columnsDef, frames=[], parent=None):
         super().__init__()
         self.parent = parent
         self._sortBy = []
@@ -81,10 +86,11 @@ class framesTableModel(QAbstractTableModel):
         self.frames = frames
         self.filters = {}
         self.filteredFrames = []
+        self.signals = {}
 
         self.ts = 0
         self.lastRefresh = 0
-        self.refreshRate = refreshRate
+        self.refreshRate = TABLE_REFRESH_RATE
 
         self.columnLabel = columnsDef
         self.sortCol = 0
@@ -112,10 +118,6 @@ class framesTableModel(QAbstractTableModel):
                 return str(section +1)
 
     def data(self, index, role):
-        #if role == Qt.TextAlignmentRole:
-        #  return Qt.AlignTop
-        #if role == Qt.BackgroundRole:
-        #  return QVariant(QColor(200,200,200))
         r = index.row()
         f = self.filteredFrames[r]
         c = index.column()
@@ -129,9 +131,60 @@ class framesTableModel(QAbstractTableModel):
             return f['msgColored']
           elif self.columnLabel[c]['field'] == 'ts':
             return "{:.3f}".format(f['ts'] - self.ts)
+          elif self.columnLabel[c]['field'] == 'ecu':
+            if f['type'] in self.signals and f['preset'] in self.signals[f['type']] and f['id'] in self.signals[f['type']][f['preset']]:
+              ecu = []
+              for elt in self.signals[f['type']][f['preset']][f['id']]:
+                if not elt['ecu'] in ecu:
+                  ecu.append(elt['ecu'])
+              return "<br>".join(ecu)
+            else:
+              return ""
+          elif self.columnLabel[c]['field'] == 'signal':
+            if f['type'] in self.signals and f['preset'] in self.signals[f['type']] and f['id'] in self.signals[f['type']][f['preset']]:
+              signals = []
+              for elt in self.signals[f['type']][f['preset']][f['id']]:
+                signals.append(self.parseSignal(elt, f['msg']))
+
+              return "<br>".join(signals)
+            else:
+              return ""
           else:
             return str(self.filteredFrames[index.row()][self.columnLabel[index.column()]['field']])
 
+    def parseSignal(self, signal, msg):
+      bitArray = ''.join(format(byte, '08b') for byte in msg)
+      bitLen = int(signal['len'])
+      bit = bitArray[int(signal['start']): int(signal['start']) + int(signal['len'])]
+      #if signal['endian'] == 0:
+      #  bit = bit[::-1]
+      if signal['signed'] == True:
+        value = BitArray(bin=bit).int
+      else:
+        value = BitArray(bin=bit).uint
+
+      if signal['factor'] != None and len(signal['factor']) > 0:
+        value *= float(signal['factor'])
+      if signal['offset'] != None and len(signal['offset']) > 0:
+        value += float(signal['offset'])
+      if signal['min'] != None and len(signal['min']) > 0:
+        if value < float(signal['min']):
+          value = float(signal['min'])
+      if signal['max'] != None and len(signal['max']) > 0:
+        if value > float(signal['max']):
+          value = float(signal['max'])
+      value = round(value,3)
+      if len(signal['values']) > 0:
+        for v in signal['values']:
+          if int(v['value']) == value:
+            value = v['label']
+            break
+      str_ = "<b>" + signal['name'] + " : </b>"
+      str_ += str(value)
+
+      if signal['unit'] != None:
+        str_ += " " + signal['unit']
+      return str_
 
     def sort(self, col, order=Qt.AscendingOrder):
       # Parse SIGNAL DETAIL
@@ -155,13 +208,11 @@ class framesTableModel(QAbstractTableModel):
 
 
     def addElt(self, elt):
-      #self.beginInsertRows(QModelIndex(), self.rowCount(None), self.rowCount(None))
       if type(elt) == 'list':
         for msg in elt:
           self.frames.append(msg)
       else:
         self.frames.append(elt)
-      #self.endInsertRows()
 
       if self.lastRefresh + self.refreshRate < time.time():
         if self.lastRefresh == 0:
@@ -172,6 +223,11 @@ class framesTableModel(QAbstractTableModel):
         self.sort(self.sortCol, self.sortOrder)
         self.lastRefresh = time.time()
 
+
     def clearElt(self):
       self.frames = []
       self.filteredFrames = []
+
+    def updateSignals(self, signals):
+      self.signals = signals
+      logging.debug("Signals updated to : %s"%signals)

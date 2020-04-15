@@ -2,6 +2,7 @@ import sys
 import subprocess
 import time
 import uuid
+import re
 from pymongo import MongoClient
 
 from modules.Constants import *
@@ -52,13 +53,6 @@ class Interfaces:
             else:
               tmpDevicesList[deviceList[i]] = self.devices[deviceList[i]]
             break
-
-      if self.config['IFACE']['vcan'] == "True":
-        if not "VCAN-DEMO" in self.devices:
-          tmpDevicesList["VCAN-DEMO"] =  {"name":"VCAN", "label":"VCAN", "builtin":True, "port":"vcan", "ref":"VCAN-DEMO", "permanent":False, "active":False}
-        else:
-          tmpDevicesList["VCAN-DEMO"] = self.devices["VCAN-DEMO"]
-
       # Look for disconnected devices
       if len(self.devices) > len(tmpDevicesList):
         for ref in self.devices:
@@ -66,7 +60,26 @@ class Interfaces:
             print("Manage disconnected device")
             print(ref)
 
-      self.devices = tmpDevicesList
+    # Look for builtin devices
+
+    for knownDevice in self.knownDevices:
+      if knownDevice['builtin'] == True:
+        process = subprocess.Popen(['dmesg'], stdout=subprocess.PIPE)
+        dmesg = subprocess.Popen(['grep',knownDevice['ref']], stdin=process.stdout, stdout=subprocess.PIPE)
+        process.wait()
+        out, err = output = dmesg.communicate()
+        if len(out) > 0:
+          if type(out) == bytes:
+            out = out.decode()
+          devices = re.findall("([v]*can[0-9]*):", out)
+          for device in devices:
+            if device == "vcan":
+              device = "vcan0"
+            if not device in self.devices:
+              tmpDevicesList[device] = {"name":"%s (%s)"%(knownDevice['name'], device), "label":"%s (%s)"%(knownDevice['name'], device), "builtin":knownDevice['builtin'], "port":device, "ref":knownDevice['ref'], "permanent":False, "active":False}
+            else:
+              tmpDevicesList[device] = self.devices[device]
+    self.devices = tmpDevicesList
 
 
   def autoMountBuiltInInterfaces(self):
@@ -76,7 +89,6 @@ class Interfaces:
           if self.devices[device]["ref"] in knownDevice['ref']:
             self.devices[device]['builtin'] = True
             self.activateDevice(device, checkAltName = True)
-            break
 
 
   def autoMountPermanentInterfaces(self):
@@ -104,7 +116,8 @@ class Interfaces:
             busAltName = None
           for iface in knownDevice['interfaces']:
             if knownDevice['builtin'] == True:
-              busId = iface['id']
+              busId = id
+              iface['id'] = id
             else:
               busId = str(uuid.uuid4())[0:13]
 
@@ -113,7 +126,7 @@ class Interfaces:
                                 "device": id, "port": self.devices[id]['port'], "deviceLabel": self.devices[id]['label'],
                                 "gw": None, "preset":None, "presetLabel":None, "builtin":self.devices[id]['builtin']}
 
-            if self.bus[busId]['mode'] == "slcan":
+            if self.bus[busId]['mode'] == "slcan" or self.bus[busId]['mode'] == "builtincan":
               if knownDevice['builtin'] == True:
                 self.bus[busId]['bus'] = busId
               else:

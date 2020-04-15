@@ -5,7 +5,7 @@ class CustomSignals(QObject):
 
   # Progress
   progress = pyqtSignal(int)
-  
+
   # Display signals
   startAnalysis = pyqtSignal(bool)
   updateAnalysis = pyqtSignal(bool)
@@ -19,3 +19,6 @@ class CustomSignals(QObject):
   gatewayForward = pyqtSignal(dict)
 
   stopSessionRecording = pyqtSignal(bool)
+
+  signalEditorRefresh  = pyqtSignal(dict)
+  signalReload = pyqtSignal(bool)

@@ -1,5 +1,4 @@
 # ShareCAN
-----------
 
 ## DESCRIPTION
 As many tools exists to play and read CAN frames, no one allow user to easily read/sniff messages on CANBUS, set gateway and quickly edit .dbc files

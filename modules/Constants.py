@@ -21,6 +21,10 @@ class SLICE:
   PREVIOUS = -1
   SELF = 0
 
+class SIGNALS:
+  SRC = {"ANALYSIS":1, "ENGINE_CODE":2, "MODEL":3, "MANUFACTURER":4}
+  DEFAULT = 2
+
 class DISPLAY:
   DURATION = {"1 sec":1, "5 sec":5, "30 sec":30, "1 min": 60}
 
@@ -48,11 +52,20 @@ SUPPORTED_SPEED_UNIT = {"can":"Kbps"}
 
 SPECIAL_MANUFACTURER = ["TEST"]
 
-# If session frame above limit, slice inserts 
+# If session frame above limit, slice inserts
 FRAME_RECORD_GROUP_LIMIT = 8000
 
 # Frame window params
+TABLE_REFRESH_RATE = 0.2
+FRAME_CHANGE_TIME = 1
+
 FRAME_WINDOW_MODEL = [{'label':'ID', 'field':'id', 'w':5},{'label':'BUS', 'field':'busName','w':5},
-                      {'label':'ECU', 'field':'id','w':5}, {'label':'DATA', 'field':'msg','w':180},
+                      {'label':'ECU', 'field':'ecu','w':5}, {'label':'DATA', 'field':'msg','w':180},
                       {'label':'ASCII', 'field':'ascii','w':5}, {'label':'COUNT', 'field':'count','w':5},
-                      {'label':'TIME', 'field':'ts','w':5}, {'label':'SIGNAL', 'field':'lastChange'}]
+                      {'label':'TIME', 'field':'ts','w':5}, {'label':'SIGNAL', 'field':'signal'}]
+
+BIT_WINDOW_MODEL = [{'label':'BIT_8', 'field':'b8','w':5}, {'label':'BIT_7', 'field':'b7','w':5},
+                    {'label':'BIT_6', 'field':'b6','w':5}, {'label':'BIT_5', 'field':'b5','w':5},
+                    {'label':'BIT_4', 'field':'b4','w':5}, {'label':'BIT_3', 'field':'b3'},
+                    {'label':'BIT_2', 'field':'b2'}, {'label':'BIT_1', 'field':'b1'},
+                    {'label':'BYTE', 'field':'byte'}]

@@ -29,6 +29,7 @@ from ui.AnalysisWindow import Ui_AnalysisWindow
 from ui.DevicesDialog import *
 from ui.BusDialog import *
 from ui.SessionDialog import *
+from ui.SignalDialog import *
 from ui.ReplayDialog import *
 from ui.AnalysisParamsDialog import *
 
@@ -58,6 +59,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.initSession()
     self.sessionLive()
     self.initDisplayObject()
+    self.initSignals()
 
     self.filterWidgets = {}
 
@@ -65,15 +67,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.threadStopManager = {}
 
     self.msgBuffer = []
-    self.refreshRate = 0.3
-    self.lastRefresh = 0
     self.maskStatic = False
 
     self.appSignals = CustomSignals()
     self.interfaces = Interfaces(self.config, self.appSignals)
 
-    logging.debug("BUS :\n %s"%self.interfaces.bus)
+    self.signalFrameSrc = None
 
+    logging.debug("BUS :\n %s"%self.interfaces.bus)
 
     #
     # -- UI Init --
@@ -84,12 +85,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.appSignals.stopSessionRecording.connect(self.stopSessionRecording)
     self.appSignals.frameRecv.connect(lambda eventDict: self.appendNewBusMsg(eventDict['msg']))
     self.appSignals.gatewayForward.connect(lambda eventDict: self.forwardBusMsg(eventDict['dst'], eventDict['msg']))
-
+    self.appSignals.signalReload.connect(lambda eventBool: self.loadSignals())
 
     # Login - BTN signals
     # If no user is set, the user is prompted for his desired login/pwd
     userCursor = self.db.config.find({"localUsername":{"$exists":True}})
-    userExists = userCursor.count() # Could not use count_documents for old pymongo compatibility 
+    userExists = userCursor.count() # Could not use count_documents for old pymongo compatibility
     if userExists > 0:
       self.fldConfirmPassword.hide()
       self.labelProfileName.hide()
@@ -104,6 +105,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.btnMainMenu.clicked.connect(lambda: self.openDashboardWindow())
     self.btnDevices.released.connect(self.openDevicesDialog)
 
+    # Analysis window - frame table
+    self.frameModel = framesTableModel(FRAME_WINDOW_MODEL, [], self.msgTable)
+    self.msgTable.setModel(self.frameModel)
+    self.msgTable.setItemDelegate(CustomDelegate(self))
+    for i in range(0, len(FRAME_WINDOW_MODEL)):
+      if hasattr(FRAME_WINDOW_MODEL[i],'w'):
+        self.msgTable.setColumnWidth(i,FRAME_WINDOW_MODEL[i]['w'])
+
+    self.msgTable.resizeColumnsToContents()
+    #self.msgTable.resizeRowsToContents()
+    h = self.msgTable.horizontalHeader()
+    h.setStretchLastSection(True)
+
     # Analysis Window - BTN signals
     self.btnBusCan.clicked.connect(lambda: self.openBusDialog('can'))
     self.btnBusLin.clicked.connect(lambda: self.openBusDialog('lin'))
@@ -117,7 +131,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     self.checkMaskStatic.clicked.connect(lambda x: self.maskStaticFrames(x))
     self.comboKeepDuration.currentIndexChanged.connect(lambda: self.updateStaticDuration())
-
+    self.comboSignalsSrc.currentIndexChanged.connect(lambda: self.loadSignals())
     self.btnSessionLive.clicked.connect(lambda: self.sessionLive())
     self.btnSessionPause.clicked.connect(lambda: self.sessionPause())
     self.btnSessionRec.clicked.connect(lambda: self.sessionRecord())
@@ -129,6 +143,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     self.btnSnap.clicked.connect(lambda: self.snapBus())
     self.btnSnapClear.clicked.connect(lambda: self.snapBus(clear=True))
+
+    self.msgTable.doubleClicked.connect(lambda x:self.openSignalDialog(x))
 
     self.comboKeepDuration.setDisabled(True)
     for k in DISPLAY.DURATION:
@@ -161,6 +177,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.btnCmdEditor.setIcon(qta.icon("fa5s.terminal", options=btn_options))
     self.btnSnap.setIcon(qta.icon("fa5s.camera-retro", options=btn_options))
     self.btnSnapClear.setIcon(qta.icon("mdi.camera-off", options=btn_options))
+
+    # Signals source
+    for src in SIGNALS.SRC:
+      self.comboSignalsSrc.addItem(QCoreApplication.translate("SIGNALS", src), SIGNALS.SRC[src])
+      self.comboSignalsSrc.setCurrentIndex(SIGNALS.DEFAULT)
+    self.comboSignalsSrc.currentIndexChanged.connect(lambda: self.loadSignals())
+
     # -- UI Init --
     #
 
@@ -214,7 +237,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                       "frames":[], "filters":{}, "idList":{}, "activeBtn":None, "owner":None}
 
   def initDisplayObject(self):
-    self.display = {"mask": False, "keep": 30}
+    self.display = {"mask": False, "keep": 30, "signalSrc":SIGNALS.DEFAULT, "hideMenu":False}
+
+  def initSignals(self):
+    self.signals = {}
 
   #
   # Generic UI methods
@@ -425,9 +451,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     analysisCursor = self.db.analysis.find({"id": analysisId, "owner":self.user['uid']}, {"_id":0})
     if analysisCursor.count() == 1:
       self.analysis = analysisCursor[0]
-      # Reset session
+      # Reset session, display options...
+      self.initSessionObject()
+      self.initDisplayObject()
+      self.showRightMenu(True)
       # Set bus presets
       # Load commands & definitions
+      # Signals
+      self.loadSignals()
       self.db.analysis.update({"id": analysisId}, {"$set":{"lastUpdate":time.time()}})
       self.openAnalysisWindow()
 
@@ -467,6 +498,37 @@ class MainWindow(QMainWindow, Ui_MainWindow):
   #
   # ANALYSIS PAGE methods
   #
+  def loadSignals(self):
+    self.signals = {}
+    signalSrc = self.comboSignalsSrc.currentData()
+    if signalSrc == None:
+      signalSrc = SIGNALS.DEFAULT
+
+    query = {"manufacturer":self.analysis['manufacturer']}
+
+    if signalSrc == SIGNALS.SRC['ANALYSIS']:
+      query['analysis'] = self.analysis['id']
+      query['owner'] = self.user['uid']
+    if signalSrc <= SIGNALS.SRC['ENGINE_CODE'] :
+      query['engineCode'] = self.analysis['engineCode']
+    if signalSrc <= SIGNALS.SRC['MODEL'] :
+      query['model'] = self.analysis['model']
+    logging.debug("SIGNAL_SRC = %s\nQUERY : \n%s"%(signalSrc,query))
+    signalsCursor = self.db.signals.find(query,{"_id":0})
+    logging.debug("COUNT : %s"%signalsCursor.count())
+    if signalsCursor.count() > 0:
+      for signal in signalsCursor:
+        if not signal['type'] in self.signals:
+          self.signals[signal['type']] = {}
+        if not signal['preset'] in self.signals[signal['type']]:
+          self.signals[signal['type']][signal['preset']] = {}
+        if not signal['id'] in self.signals[signal['type']][signal['preset']]:
+          self.signals[signal['type']][signal['preset']][signal['id']] = []
+
+        self.signals[signal['type']][signal['preset']][signal['id']].append(signal)
+    self.frameModel.updateSignals(self.signals)
+    logging.debug("SIGNALS :\n%s"%self.signals)
+
   def openAnalysisWindow(self):
     # Main buttons
 
@@ -474,25 +536,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.vehicleTitle.setText(self.setAnalysisLabel())
     self.btnEditVehicle.setIcon(qta.icon("fa5s.edit", color='white'))
 
-    # Frame table
-    self.frameModel = framesTableModel(FRAME_WINDOW_MODEL, self.refreshRate, [], self.msgTable)
-    self.msgTable.setModel(self.frameModel)
-    self.msgTable.setItemDelegate(CustomDelegate(self))
-    for i in range(0, len(FRAME_WINDOW_MODEL)):
-      if hasattr(FRAME_WINDOW_MODEL[i],'w'):
-        self.msgTable.setColumnWidth(i,FRAME_WINDOW_MODEL[i]['w'])
-
-    h = self.msgTable.horizontalHeader()
-    h.setStretchLastSection(True)
-
     # Right menu
-    self.rightMenuLayout.setAlignment( Qt.AlignTop)
-
-    self.btnShowRightMenu.setIcon(qta.icon('ei.eye-close'))
-    self.btnShowRightMenu.setCursor(Qt.PointingHandCursor)
-
-
-    #self.rightMenu.setVisible(False)
+    self.comboSignalsSrc.setCurrentIndex(self.display['signalSrc'])
 
     # ID filter
     headerItem  = QTreeWidgetItem()
@@ -501,8 +546,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.idFilter.clicked.connect(lambda: self.checkActiveIdFilters())
 
     # Devices dialog
-
-
     self.stackedWidget.setCurrentIndex(2)
 
   def maskStaticFrames(self, state):
@@ -524,6 +567,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
           self.activeBus[bus]['idValues'][id]['snapValues'] = self.activeBus[bus]['idValues'][id]['values'].copy()
         else:
           self.activeBus[bus]['idValues'][id]['snapValues'] = {}
+      logging.debug(self.activeBus[bus]['idValues'][str(0x188)]['snapValues'])
 
   #
   # SESSION Methods
@@ -671,8 +715,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
   #
   # Commands
   #
-  def showRightMenu(self):
-    if self.rightMenu.isVisible() == True:
+  def showRightMenu(self, force=None):
+    if force!=None:
+      currentStatus = not force
+    else:
+      currentStatus = self.rightMenu.isVisible()
+    if currentStatus == True:
       self.rightMenu.setVisible(False)
       self.btnShowRightMenu.setText(QCoreApplication.translate("MainWindow","SHOW_MENU"))
       self.btnShowRightMenu.setIcon(qta.icon('ei.eye-open'))
@@ -771,20 +819,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       self.checkIfFilterExists(msg)
       msg['ascii'] = ""
       msg['msgColored'] = ""
+      timer = time.time()
       for i in range(0, msg['len']):
         b = "{0:0{1}x}".format(msg['bytes'][i]['value'],2)
         if msg['bytes'][i]['value'] >= 32 and msg['bytes'][i]['value'] <= 126:
           a = chr(msg['bytes'][i]['value'])
         else:
           a = "."
-        if msg['bytes'][i]['isChanged'] == True:
+        if msg['bytes'][i]['isChanged'] == True or (msg['bytes'][i]['prevByte'] != msg['bytes'][i]['value'] and msg['bytes'][i]['lastChange'] + FRAME_CHANGE_TIME > timer):
           msg['msgColored'] += "<span style='color:#FF0000'>%s</span> "%b
           msg['ascii'] += "<span style='color:#FF0000'>%s</span>"%a
         else:
           msg['msgColored'] += "%s "%b
           msg['ascii'] += a
+
       if not( self.maskStatic != False and msg['lastChange'] + self.maskStatic < timer and self.session['mode'] > SESSION_MODE.IDLE):
         self.frameModel.addElt(msg)
+
+      if self.signalFrameSrc != None:
+        if self.signalFrameSrc['id'] == msg['id'] and self.signalFrameSrc['preset'] == msg['preset']:
+          self.appSignals.signalEditorRefresh.emit(msg)
 
     # Filters Update
   #
@@ -807,7 +861,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
   #New analysis management
   def openAnalysisParamsDialog(self, newAnalysis=True):
     dlg = AnalysisParamsDialog(self, newAnalysis)
-    dlg.setWindowFlags(Qt.Popup)
+    dlg.setWindowFlags(Qt.Dialog)
     dlg.setGeometry(dlg.x(), dlg.y(), 460, 200)
     dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y()+90);
     dlg.setStyleSheet(self.cssContent)
@@ -816,7 +870,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
   #Devices management
   def openDevicesDialog(self):
     dlg = DevicesDialog(self.interfaces)
-    dlg.setWindowFlags(Qt.Popup)
+    dlg.setWindowFlags(Qt.Dialog)
     dlg.setGeometry(dlg.x(), dlg.y(), 800, 200)
     dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y()+90);
     dlg.setStyleSheet(self.cssContent)
@@ -853,6 +907,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     r = dlg.exec_()
     if r == 1:
       sessionCursor = self.db.sessions.find({"id": self.session['id']}, {"_id":0})
+      progress = None
       if sessionCursor.count() == 1:
         self.initSessionObject()
         for elt in sessionCursor[0]:
@@ -860,8 +915,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Load frames
         framesCursor = self.db.frames.find({"session": self.session['id']}, {"_id":0})
         if framesCursor.count() > 0:
+          progress = self.openProgressDialog("LOAD_SESSION","LOAD_SESSION_DETAILS",framesCursor.count())
+          i = 1
           for frame in framesCursor:
             self.session['frames'].append(frame['msg'])
+            progress.setValue(i)
+            i+= 1
+            QApplication.processEvents()
+
+
         self.session['mode'] = SESSION_MODE.FORENSIC
       if self.session['owner'] != self.user["uid"]:
         btnClass = "btn-disabled"
@@ -884,6 +946,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       self.frameModel.lastRefresh = 0
       self.frameModel.clearElt()
       self.frameModel.sort(self.frameModel.sortCol, self.frameModel.sortOrder)
+      if progress != None:
+        progress.close()
       self.sessionForensic()
 
   # Message replay
@@ -905,6 +969,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       self.frameModel.sort(self.frameModel.sortCol, self.frameModel.sortOrder)
       self.sessionForensic()
 
+  # Signal editor
+  def openSignalDialog(self, frameId=None):
+    if frameId != None:
+      src = self.frameModel.filteredFrames[frameId.row()]
+      self.signalFrameSrc =  {"id":src['id'], "preset":src['preset']}
+
+      dlg = SignalDialog(self, src)
+      dlg.setWindowFlags(Qt.Dialog)
+      dlg.setGeometry(dlg.x(), dlg.y(), 800, 320)
+      dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y() + 90);
+      dlg.setStyleSheet(self.cssContent)
+      r = dlg.exec_()
+      self.signalFrameSrc = None
+
+
   def centerMsg(self, msgWidget):
     msgWidget.setGeometry(self.x(), self.y(), 300, 180)
     msgWidget.move(self.x() + (self.width() - msgWidget.width()) / 2,
@@ -920,8 +999,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
           print('Cell %d/%s is selected' % (index.row(), index.column()))
         #print(s.column())
 
-      QApplication.clipboard().setText("YO")
-      event.accept()
+      #QApplication.clipboard().setText("YO")
+      #event.accept()
     event.ignore()
   # -- Copy/Cut hack
 

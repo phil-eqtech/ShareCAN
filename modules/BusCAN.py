@@ -75,10 +75,11 @@ class BusCAN:
     self.bus['active'] = False
 
   def callShellCmdIp(self, status = 'up'):
-    args = ['sudo','/sbin/ip', 'link', 'set', status, self.bus['bus']]
-    p = subprocess.Popen(args)
-    p.communicate()
-    return p.returncode
+    if self.bus['bus'] != "vcan0":
+      args = ['sudo','/sbin/ip', 'link', 'set', status, self.bus['bus']]
+      p = subprocess.Popen(args)
+      p.communicate()
+      return p.returncode
 
   def slcanGetSpeedCode(self):
     slcanSpeedCode=[10,20,50,100,125,250,500,800,1000]
@@ -97,20 +98,21 @@ class BusCAN:
       return False
 
   def setBuiltinSpeed(self):
-    args = ['sudo','/sbin/ip', 'link', 'set', 'down', self.bus['bus']]
-    p = subprocess.Popen(args)
-    p.communicate()
-    time.sleep(0.2)
-    args = ['sudo','/sbin/ip', 'link', 'set', 'up', self.bus['bus'], 'type','can','bitrate', str(math.floor(self.bus['speed']*1000))]
-    p = subprocess.Popen(args)
-    p.communicate()
-    return p.returncode
+    if self.bus['bus'] != "vcan0":
+      args = ['sudo','/sbin/ip', 'link', 'set', 'down', self.bus['bus']]
+      p = subprocess.Popen(args)
+      p.communicate()
+      time.sleep(0.2)
+      args = ['sudo','/sbin/ip', 'link', 'set', 'up', self.bus['bus'], 'type','can','bitrate', str(math.floor(self.bus['speed']*1000))]
+      p = subprocess.Popen(args)
+      p.communicate()
+      return p.returncode
 
   def closeSlcan(self):
     self.slcanProcess.sendcontrol("c")
 
   def startCapturing(self):
-    if self.bus['mode'] == "slcan":
+    if self.bus['mode'] == "slcan" or self.bus['mode'] == "builtincan":
       if not 'capturing' in self.threads:
         self.threads['capturing'] = threading.Thread(target=self.watchBus)
         self.threads['capturing'].start()
@@ -120,7 +122,7 @@ class BusCAN:
       pass # return ERROR
 
   def stopCapturing(self):
-    if self.bus['mode'] == "slcan":
+    if self.bus['mode'] == "slcan" or self.bus['mode'] == "builtincan":
       self.threadStopManager["capturing"].set()
       self.threads['capturing'].join()
       del self.threadStopManager['capturing']
@@ -228,11 +230,13 @@ class BusCAN:
     hasChangedValue = False
     if not id in self.idValues:
       self.idValues[id] = {"lastValue": [], "values": {}, "snapValues": {}, "lastChange":0,
-                            "count":0}
+                            "count":0, "prevBytes":[], "lastChanges":[]}
 
     self.idValues[id]['count'] += 1
 
     prevValues = self.idValues[id]
+    if id == 0x188:
+      pass
     for i in range(0, len(msg)):
       byteDetails = {}
       byteRef = str(i)
@@ -241,14 +245,27 @@ class BusCAN:
         if prevValues["lastValue"][i] != msg[i]:
           if not byteRef in prevValues['snapValues'] or not msg[i] in prevValues['snapValues'][byteRef]:
             byteDetails['isChanged'] = True
+            byteDetails['lastChange'] = time.time()
+            byteDetails['prevByte'] = prevValues["lastValue"][i]
             hasChangedValue = True
           else:
             byteDetails['isChanged'] = False
+            byteDetails['prevByte'] = prevValues["prevBytes"][i]
+            byteDetails['lastChange'] = prevValues["lastChanges"][i]
         else:
           byteDetails['isChanged'] = False
+          byteDetails['prevByte'] = prevValues["prevBytes"][i]
+          byteDetails['lastChange'] = prevValues["lastChanges"][i]
       else:
         byteDetails['isChanged'] = True
+        byteDetails['prevByte'] = None
+        byteDetails['lastChange'] = time.time()
+
+        self.idValues[id]['prevBytes'].append(None)
+        self.idValues[id]['lastChanges'].append(None)
         hasChangedValue = True
+      self.idValues[id]['prevBytes'][i] = byteDetails['prevByte']
+      self.idValues[id]['lastChanges'][i] = byteDetails['lastChange']
 
       if not byteRef in prevValues['values']:
         self.idValues[id]['values'][byteRef] = []

@@ -80,6 +80,8 @@ class ModelDialog(QDialog):
     self.activeBus = mainWindowRef.activeBus
     self.threads = mainWindowRef.threads
     self.threadStopManager = mainWindowRef.threadStopManager
+    self.signals =  mainWindowRef.signals
+    print(self.analysis)
 
   def removeLines(self, layout):
     rows = layout.rowCount()
