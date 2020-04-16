@@ -239,7 +239,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
   def initSessionObject(self):
     self.session = {"name":None, "id":None, "mode":SESSION_MODE.LIVE, "share": False,
-                      "frames":[], "filters":{}, "idList":{}, "activeBtn":None, "owner":None}
+                      "frames":[], "filters":{}, "idList":{}, "owner":None}
 
   def initDisplayObject(self):
     self.display = {"mask": False, "keep": 30, "signalSrc":SIGNALS.DEFAULT, "hideMenu":False}
@@ -620,12 +620,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       btn.setStyle(btn.style())
 
   def sessionSetActiveBtn(self, btnWidget):
-    if self.session['activeBtn'] != None:
-      self.session['activeBtn'].setProperty("cssClass","btn-primary")
-      self.session['activeBtn'].setStyle(self.session['activeBtn'].style())
+    sessionBtn = [self.btnSessionReplay, self.btnSessionNew, self.btnSessionRec,
+                  self.btnSessionPause,self.btnSessionForensic,
+                  self.btnSessionLive,self.btnSessionLoad,self.btnSessionSave]
+    for btn in sessionBtn:
+      if btn.isEnabled() and btn != btnWidget:
+        btn.setProperty("cssClass","btn-primary")
+        btn.setStyle(btn.style())
     btnWidget.setProperty("cssClass","btn-success")
     btnWidget.setStyle(btnWidget.style())
-    self.session['activeBtn'] = btnWidget
 
   def sessionNew(self):
     msgBox = QMessageBox()
@@ -653,7 +656,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       if isOnPause == True:
         self.sessionPause()
       else:
-        self.session['activeBtn'] = self.btnSessionPause
         self.sessionLive()
 
   def sessionSave(self):
@@ -787,6 +789,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       self.session['filters'] = filterList
       self.frameModel.updateFilters(self.session['filters'])
 
+
   def checkIfFilterExists(self, msg):
     if not msg['presetLabel'] in self.session['idList']:
       self.session['idList'][msg['presetLabel']] = []
@@ -810,12 +813,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.filterWidgets[id].setText(0, "{0:#0{1}x}".format(msg['id'],5))
       self.filterWidgets[id].setCheckState(0, Qt.Checked)
 
+
   def forwardBusMsg(self, dst, msg):
     if self.interfaces.bus[dst]['active'] == True:
       self.activeBus[dst].sendMsg(msg, raw=True)
 
+
   # Add new message to frame Tables
-  #
   def appendNewBusMsg(self, msg):
     # If record selected, add frame to session
     if self.session['mode'] == SESSION_MODE.RECORDING:
@@ -1009,7 +1013,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
       btnToUpdate = [self.btnSessionSave, self.btnSessionRec, self.btnSessionLive,
                       self.btnSessionPause]
-      self.session['activeBtn'] = None
       self.toggleButtonStatus(btnToUpdate, btnClass, isDisabled)
       self.toggleButtonStatus([self.btnSessionReplay,self.btnSessionForensic])
 
