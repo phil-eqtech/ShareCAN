@@ -25,3 +25,6 @@ class CustomSignals(QObject):
 
   # Frame model / msg Table
   flagId = pyqtSignal(list)
+  filterId = pyqtSignal(list)
+  unFilterId = pyqtSignal(bool)
+  replaySelection = pyqtSignal(list)

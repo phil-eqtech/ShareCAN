@@ -18,7 +18,7 @@ class ReplayUi(QWidget, Ui_REPLAY):
 
 
 class ReplayDialog(ModelDialog):
-  def __init__(self, refWindow, mode=REPLAY.SESSION):
+  def __init__(self, refWindow, mode=REPLAY.SESSION, frames=None):
     super().__init__()
 
     self.getMainVariables(refWindow)
@@ -53,9 +53,13 @@ class ReplayDialog(ModelDialog):
 
     if self.replayMode == REPLAY.SESSION:
       self.frames = self.session['frames']
-    else:
-      self.frames = []
-      self.btnUpdateSession.hide()
+    if self.replayMode == REPLAY.SELECTION:
+      orderedFrames= sorted(frames,
+                            key=lambda k: (k['ts']))
+
+      self.frames = orderedFrames
+
+      #self.btnUpdateSession.hide()
 
     self.sliceNumber = 0
     self.slices = [{},{},{}]

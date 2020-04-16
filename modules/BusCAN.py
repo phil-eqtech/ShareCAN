@@ -92,6 +92,10 @@ class BusCAN:
   def setSlcanSpeed(self):
     speed = self.slcanGetSpeedCode()
     if speed != None:
+      if 'baudrate' in self.bus:
+        speed += " -S %d"%self.bus['baudrate']
+        logging.debug("Baudrate : %s"%speed)
+        logging.debug("Spawn : ./utils/slcan.sh %s %s %s"%(speed,self.bus['port'],self.bus['bus']))
       self.slcanProcess = pexpect.spawn('./utils/slcan.sh %s %s %s'%(speed,self.bus['port'],self.bus['bus']))
       return True
     else:

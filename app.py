@@ -86,6 +86,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.appSignals.frameRecv.connect(lambda eventDict: self.appendNewBusMsg(eventDict['msg']))
     self.appSignals.gatewayForward.connect(lambda eventDict: self.forwardBusMsg(eventDict['dst'], eventDict['msg']))
     self.appSignals.signalReload.connect(lambda eventBool: self.loadSignals())
+    self.appSignals.filterId.connect(lambda eventList : self.filterId(eventList))
+    self.appSignals.unFilterId.connect(lambda eventBool : self.unFilterId())
+    self.appSignals.replaySelection.connect(lambda eventList: self.openReplayDialog(REPLAY.SELECTION, eventList))
 
     # Login - BTN signals
     # If no user is set, the user is prompted for his desired login/pwd
@@ -547,6 +550,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # Devices dialog
     self.stackedWidget.setCurrentIndex(2)
 
+
+  def filterId(self, cells):
+    if len(cells) > 0:
+      r = []
+      for cell in cells:
+        if not cell['row'] in r:
+          lbl = "c_%s%s"%(self.frameModel.filteredFrames[cell['row']]['presetLabel'], self.frameModel.filteredFrames[cell['row']]['id'])
+          if lbl in self.filterWidgets:
+            self.filterWidgets[lbl].setCheckState(0,Qt.Unchecked)
+          r.append(cell['row'])
+      self.msgTable.clearSelection()
+      self.checkActiveIdFilters()
+
+
+  def unFilterId(self):
+    for widget in self.filterWidgets:
+      self.filterWidgets[widget].setCheckState(0,Qt.Checked)
+    self.msgTable.clearSelection()
+    self.checkActiveIdFilters()
+
+
   def maskStaticFrames(self, state):
     if state == True:
       self.comboKeepDuration.setDisabled(False)
@@ -1002,9 +1026,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       self.sessionForensic()
 
   # Message replay
-  def openReplayDialog(self, mode=REPLAY.SESSION):
+  def openReplayDialog(self, mode=REPLAY.SESSION, cells=None):
     self.sessionPause()
-    dlg = ReplayDialog(self, mode)
+    frames = None
+    if mode == REPLAY.SELECTION:
+      if len(cells) == 0:
+        return None
+      else:
+        r = []
+        frames = []
+        for cell in cells:
+          if not cell['row'] in r:
+            frames.append(self.frameModel.filteredFrames[cell['row']])
+            r.append(cell['row'])
+
+    dlg = ReplayDialog(self, mode, frames)
     dlg.setWindowFlags(Qt.Dialog)
     dlg.setGeometry(dlg.x(), dlg.y(), 640, 320)
     dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y() + 90);

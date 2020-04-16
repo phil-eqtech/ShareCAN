@@ -26,35 +26,37 @@ class TableView(QTableView):
         cells.append({"row":row, "col":column})
 
     self.menu = QMenu(self)
+    filterAction = QAction(QCoreApplication.translate("MENU","FILTER_ID"), self)
+    filterAction.setIcon(qta.icon('fa5s.eye-slash'))
+    filterAction.triggered.connect(lambda: self.appSignals.filterId.emit(cells))
+    unFilterAction = QAction(QCoreApplication.translate("MENU","UNFILTER_ID"), self)
+    unFilterAction.setIcon(qta.icon('mdi.eye-plus'))
+    unFilterAction.triggered.connect(lambda: self.appSignals.unFilterId.emit(True))
+
+    replayAction = QAction(QCoreApplication.translate("MENU","REPLY"), self)
+    replayAction.setIcon(qta.icon('mdi.replay'))
+    replayAction.triggered.connect(lambda: self.appSignals.replaySelection.emit(cells))
+
     flagAction = QAction(QCoreApplication.translate("MENU","SET_FLAG"), self)
-    flagAction.setIcon(qta.icon('mdi.flag', options=[{'color':'green'}]))
-    flagAction.triggered.connect(lambda: self.flagId(cells))
+    flagAction.setIcon(qta.icon('mdi.flag'))
+    flagAction.triggered.connect(lambda: self.appSignals.flagId.emit(cells))
     unFlagAction = QAction(QCoreApplication.translate("MENU","RESET_FLAGS"), self)
-    unFlagAction.setIcon(qta.icon('mdi.flag-remove-outline',options=[{'color':'red'}]))
-    unFlagAction.triggered.connect(lambda: self.unFlagId())
+    unFlagAction.setIcon(qta.icon('mdi.flag-remove-outline'))
+    unFlagAction.triggered.connect(lambda: self.appSignals.flagId.emit([]))
+
+    self.menu.addAction(filterAction)
+    self.menu.addAction(unFilterAction)
+    self.menu.addSeparator()
+    self.menu.addAction(replayAction)
+    self.menu.addSeparator()
     self.menu.addAction(flagAction)
     self.menu.addAction(unFlagAction)
     # add other required actions
     self.menu.popup(QCursor.pos())
 
-  def flagId(self, cells):
-    self.appSignals.flagId.emit(cells)
-
-  def unFlagId(self):
-    self.appSignals.flagId.emit([])
 
   def testAction(self, event):
-    pass
-    # get the selected row and column
-    """row = self.rowAt(event.pos().y())
-      col = self.columnAt(event.pos().x())
-      # get the selected cell
-      cell = self.item(row, col)
-      # get the text inside selected cell (if any)
-      cellText = cell.text()
-      # get the widget inside selected cell (if any)
-      widget = self.tableWidget.cellWidget(row, col)
-    """
+    logging.debug("TEST ACTION")
 
 class CustomDelegate(QStyledItemDelegate):
   def anchorAt(self, html, point):

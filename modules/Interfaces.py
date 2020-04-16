@@ -50,6 +50,8 @@ class Interfaces:
           if knownDevice['ref'] in usbInfo[1]:
             if not deviceList[i] in self.devices:
               tmpDevicesList[deviceList[i]] = {"name":knownDevice['name'], "label":knownDevice['name'][0:8], "builtin":knownDevice['builtin'], "port":usbInfo[0], "ref":usbInfo[1], "permanent":False, "active":False}
+              if 'baudrate' in knownDevice:
+                tmpDevicesList[deviceList[i]]['baudrate'] = knownDevice['baudrate']
             else:
               tmpDevicesList[deviceList[i]] = self.devices[deviceList[i]]
             break
@@ -125,7 +127,8 @@ class Interfaces:
                                 "mode": iface['mode'], "ref": iface['id'], "active": False, "speed":None, "spec": None,
                                 "device": id, "port": self.devices[id]['port'], "deviceLabel": self.devices[id]['label'],
                                 "gw": None, "preset":None, "presetLabel":None, "builtin":self.devices[id]['builtin']}
-
+            if 'baudrate' in self.devices[id]:
+              self.bus[busId]['baudrate'] = self.devices[id]['baudrate']
             if self.bus[busId]['mode'] == "slcan" or self.bus[busId]['mode'] == "builtincan":
               if knownDevice['builtin'] == True:
                 self.bus[busId]['bus'] = busId
