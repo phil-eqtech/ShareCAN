@@ -62,7 +62,7 @@ FRAME_CHANGE_TIME = 1
 FRAME_WINDOW_MODEL = [{'label':'ID', 'field':'id', 'w':5},{'label':'BUS', 'field':'busName','w':5},
                       {'label':'ECU', 'field':'ecu','w':5}, {'label':'DATA', 'field':'msg','w':180},
                       {'label':'ASCII', 'field':'ascii','w':5}, {'label':'COUNT', 'field':'count','w':5},
-                      {'label':'TIME', 'field':'ts','w':5}, {'label':'SIGNAL', 'field':'signal'}]
+                      {'label':'TIME', 'field':'ts','w':5}, {'label':'SIGNAL', 'field':'signals'}]
 
 BIT_WINDOW_MODEL = [{'label':'BIT_8', 'field':'b8','w':5}, {'label':'BIT_7', 'field':'b7','w':5},
                     {'label':'BIT_6', 'field':'b6','w':5}, {'label':'BIT_5', 'field':'b5','w':5},

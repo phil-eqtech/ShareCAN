@@ -5,25 +5,48 @@ from PyQt5.QtGui import *
 import time
 import logging
 from bitstring import BitArray
+import qtawesome as qta
 
 from modules.Constants import *
+from modules.Signals import CustomSignals
 
 class TableView(QTableView):
   def __init__(self, *args, **kwargs):
     super(TableView, self).__init__(*args, **kwargs)
+    self.appSignals = None
+
+  def linkAppSignals(self, appSignals):
+    self.appSignals = appSignals
 
   def contextMenuEvent(self, event):
+    cells = []
+    if self.selectionModel().selection().indexes():
+      for i in self.selectionModel().selection().indexes():
+        row, column = i.row(), i.column()
+        cells.append({"row":row, "col":column})
+
     self.menu = QMenu(self)
-    renameAction = QAction('MENU_IN_PROGRESS....', self)
-    renameAction.triggered.connect(lambda: self.renameSlot(event))
-    self.menu.addAction(renameAction)
+    flagAction = QAction(QCoreApplication.translate("MENU","SET_FLAG"), self)
+    flagAction.setIcon(qta.icon('mdi.flag', options=[{'color':'green'}]))
+    flagAction.triggered.connect(lambda: self.flagId(cells))
+    unFlagAction = QAction(QCoreApplication.translate("MENU","RESET_FLAGS"), self)
+    unFlagAction.setIcon(qta.icon('mdi.flag-remove-outline',options=[{'color':'red'}]))
+    unFlagAction.triggered.connect(lambda: self.unFlagId())
+    self.menu.addAction(flagAction)
+    self.menu.addAction(unFlagAction)
     # add other required actions
     self.menu.popup(QCursor.pos())
 
-  def renameSlot(self, event):
-      print("renaming slot called")
-      # get the selected row and column
-      """row = self.rowAt(event.pos().y())
+  def flagId(self, cells):
+    self.appSignals.flagId.emit(cells)
+
+  def unFlagId(self):
+    self.appSignals.flagId.emit([])
+
+  def testAction(self, event):
+    pass
+    # get the selected row and column
+    """row = self.rowAt(event.pos().y())
       col = self.columnAt(event.pos().x())
       # get the selected cell
       cell = self.item(row, col)
@@ -31,7 +54,7 @@ class TableView(QTableView):
       cellText = cell.text()
       # get the widget inside selected cell (if any)
       widget = self.tableWidget.cellWidget(row, col)
-      """
+    """
 
 class CustomDelegate(QStyledItemDelegate):
   def anchorAt(self, html, point):
@@ -77,16 +100,20 @@ class CustomDelegate(QStyledItemDelegate):
 
 
 class framesTableModel(QAbstractTableModel):
-    def __init__(self, columnsDef, frames=[], parent=None):
+    def __init__(self, columnsDef, frames=[], parent=None, appSignals = None):
         super().__init__()
         self.parent = parent
         self._sortBy = []
         self._sortDirection = []
 
+        self.appSignals = appSignals
+
         self.frames = frames
         self.filters = {}
         self.filteredFrames = []
         self.signals = {}
+
+        self.flaggedId = []
 
         self.ts = 0
         self.lastRefresh = 0
@@ -96,6 +123,8 @@ class framesTableModel(QAbstractTableModel):
         self.sortCol = 0
         self.sortOrder = Qt.DescendingOrder
 
+        if self.appSignals != None:
+          self.appSignals.flagId.connect(lambda cells: self.flagId(cells))
 
     def __getitem__(self, key):
       return getattr(self, key)
@@ -109,6 +138,17 @@ class framesTableModel(QAbstractTableModel):
     def columnCount(self, parent):
       return len(self.columnLabel)
 
+    def flagId(self, cells):
+      if len(cells) == 0:
+        self.flaggedId = []
+      else:
+        r = []
+        for cell in cells:
+          if not cell['row'] in r:
+            lbl = "%s_%s"%(self.filteredFrames[cell['row']]['id'], self.filteredFrames[cell['row']]['preset'])
+            self.flaggedId.append(lbl)
+            r.append(cell['row'])
+
     def headerData(self, section, orientation, role):
         # section is the index of the column/row.
         if role == Qt.DisplayRole:
@@ -121,7 +161,12 @@ class framesTableModel(QAbstractTableModel):
         r = index.row()
         f = self.filteredFrames[r]
         c = index.column()
-        if role == Qt.DisplayRole:
+        if role == Qt.DecorationRole :
+          if c == 0 and len(self.flaggedId) > 0:
+            lbl = "%s_%s"%(self.filteredFrames[index.row()]['id'], self.filteredFrames[index.row()]['preset'])
+            if lbl in self.flaggedId:
+              return QIcon(qta.icon('mdi.flag', options=[{'color':'green'}]))
+        elif role == Qt.DisplayRole:
           if self.columnLabel[c]['field'] == 'id': # ID
             if f['extendedId']==True:
               return "{0:#0{1}x}".format(f['id'],10)
@@ -131,60 +176,8 @@ class framesTableModel(QAbstractTableModel):
             return f['msgColored']
           elif self.columnLabel[c]['field'] == 'ts':
             return "{:.3f}".format(f['ts'] - self.ts)
-          elif self.columnLabel[c]['field'] == 'ecu':
-            if f['type'] in self.signals and f['preset'] in self.signals[f['type']] and f['id'] in self.signals[f['type']][f['preset']]:
-              ecu = []
-              for elt in self.signals[f['type']][f['preset']][f['id']]:
-                if not elt['ecu'] in ecu:
-                  ecu.append(elt['ecu'])
-              return "<br>".join(ecu)
-            else:
-              return ""
-          elif self.columnLabel[c]['field'] == 'signal':
-            if f['type'] in self.signals and f['preset'] in self.signals[f['type']] and f['id'] in self.signals[f['type']][f['preset']]:
-              signals = []
-              for elt in self.signals[f['type']][f['preset']][f['id']]:
-                signals.append(self.parseSignal(elt, f['msg']))
-
-              return "<br>".join(signals)
-            else:
-              return ""
           else:
             return str(self.filteredFrames[index.row()][self.columnLabel[index.column()]['field']])
-
-    def parseSignal(self, signal, msg):
-      bitArray = ''.join(format(byte, '08b') for byte in msg)
-      bitLen = int(signal['len'])
-      bit = bitArray[int(signal['start']): int(signal['start']) + int(signal['len'])]
-      #if signal['endian'] == 0:
-      #  bit = bit[::-1]
-      if signal['signed'] == True:
-        value = BitArray(bin=bit).int
-      else:
-        value = BitArray(bin=bit).uint
-
-      if signal['factor'] != None and len(signal['factor']) > 0:
-        value *= float(signal['factor'])
-      if signal['offset'] != None and len(signal['offset']) > 0:
-        value += float(signal['offset'])
-      if signal['min'] != None and len(signal['min']) > 0:
-        if value < float(signal['min']):
-          value = float(signal['min'])
-      if signal['max'] != None and len(signal['max']) > 0:
-        if value > float(signal['max']):
-          value = float(signal['max'])
-      value = round(value,3)
-      if len(signal['values']) > 0:
-        for v in signal['values']:
-          if int(v['value']) == value:
-            value = v['label']
-            break
-      str_ = "<b>" + signal['name'] + " : </b>"
-      str_ += str(value)
-
-      if signal['unit'] != None:
-        str_ += " " + signal['unit']
-      return str_
 
     def sort(self, col, order=Qt.AscendingOrder):
       # Parse SIGNAL DETAIL

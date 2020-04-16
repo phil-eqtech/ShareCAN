@@ -22,3 +22,6 @@ class CustomSignals(QObject):
 
   signalEditorRefresh  = pyqtSignal(dict)
   signalReload = pyqtSignal(bool)
+
+  # Frame model / msg Table
+  flagId = pyqtSignal(list)

@@ -106,9 +106,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.btnDevices.released.connect(self.openDevicesDialog)
 
     # Analysis window - frame table
-    self.frameModel = framesTableModel(FRAME_WINDOW_MODEL, [], self.msgTable)
+    self.frameModel = framesTableModel(FRAME_WINDOW_MODEL, [], self.msgTable, self.appSignals)
     self.msgTable.setModel(self.frameModel)
     self.msgTable.setItemDelegate(CustomDelegate(self))
+    self.msgTable.linkAppSignals(self.appSignals)
+
     for i in range(0, len(FRAME_WINDOW_MODEL)):
       if hasattr(FRAME_WINDOW_MODEL[i],'w'):
         self.msgTable.setColumnWidth(i,FRAME_WINDOW_MODEL[i]['w'])
@@ -513,9 +515,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       query['engineCode'] = self.analysis['engineCode']
     if signalSrc <= SIGNALS.SRC['MODEL'] :
       query['model'] = self.analysis['model']
-    logging.debug("SIGNAL_SRC = %s\nQUERY : \n%s"%(signalSrc,query))
     signalsCursor = self.db.signals.find(query,{"_id":0})
-    logging.debug("COUNT : %s"%signalsCursor.count())
     if signalsCursor.count() > 0:
       for signal in signalsCursor:
         if not signal['type'] in self.signals:
@@ -527,7 +527,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.signals[signal['type']][signal['preset']][signal['id']].append(signal)
     self.frameModel.updateSignals(self.signals)
-    logging.debug("SIGNALS :\n%s"%self.signals)
 
   def openAnalysisWindow(self):
     # Main buttons
@@ -815,6 +814,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.frameModel['frames'].pop(idx)
             break
 
+    # Signals & ecu
+    if msg['type'] in self.signals and msg['preset'] in self.signals[msg['type']] and msg['id'] in self.signals[msg['type']][msg['preset']]:
+      ecu = []
+      for elt in self.signals[msg['type']][msg['preset']][msg['id']]:
+        if not elt['ecu'] in ecu and len(elt['ecu']) > 0:
+          ecu.append(elt['ecu'])
+      msg['ecu'] = "<br />".join(ecu)
+    else:
+      msg['ecu'] = ""
+
+    if msg['type'] in self.signals and msg['preset'] in self.signals[msg['type']] and msg['id'] in self.signals[msg['type']][msg['preset']]:
+      signals = []
+      for elt in self.signals[msg['type']][msg['preset']][msg['id']]:
+        signals.append(self.parseSignal(elt, msg['msg']))
+      msg['signals'] = "<br>".join(signals)
+    else:
+      msg['signals'] = ""
+
     if self.session['mode'] != SESSION_MODE.IDLE:
       self.checkIfFilterExists(msg)
       msg['ascii'] = ""
@@ -840,6 +857,40 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if self.signalFrameSrc['id'] == msg['id'] and self.signalFrameSrc['preset'] == msg['preset']:
           self.appSignals.signalEditorRefresh.emit(msg)
 
+
+  def parseSignal(self, signal, msg):
+    bitArray = ''.join(format(byte, '08b') for byte in msg)
+    bitLen = int(signal['len'])
+    bit = bitArray[int(signal['start']): int(signal['start']) + int(signal['len'])]
+    #if signal['endian'] == 0:
+    #  bit = bit[::-1]
+    if signal['signed'] == True:
+      value = BitArray(bin=bit).int
+    else:
+      value = BitArray(bin=bit).uint
+
+    if signal['factor'] != None and len(signal['factor']) > 0:
+      value *= float(signal['factor'])
+    if signal['offset'] != None and len(signal['offset']) > 0:
+      value += float(signal['offset'])
+    if signal['min'] != None and len(signal['min']) > 0:
+      if value < float(signal['min']):
+        value = float(signal['min'])
+    if signal['max'] != None and len(signal['max']) > 0:
+      if value > float(signal['max']):
+        value = float(signal['max'])
+    value = round(value,3)
+    if len(signal['values']) > 0:
+      for v in signal['values']:
+        if int(v['value']) == value:
+          value = v['label']
+          break
+    str_ = "<b>" + signal['name'] + " : </b>"
+    str_ += str(value)
+
+    if signal['unit'] != None:
+      str_ += " " + signal['unit']
+    return str_
     # Filters Update
   #
   # Dialogs -
