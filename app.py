@@ -740,8 +740,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
   #
   # Commands
   #
-  def showRightMenu(self, force=None):
-    if force!=None:
+  def showRightMenu(self, force=False):
+    if force!=False:
       currentStatus = not force
     else:
       currentStatus = self.rightMenu.isVisible()
