@@ -675,7 +675,7 @@ class CommandDialog(ModelDialog):
       progress.setMinimum(0)
       progress.setMaximum(fuzzQty)
       progress.setAutoClose(True)
-      self.progress.canceled.connect(lambda:self.process.terminate)
+      progress.canceled.connect(lambda: self.threadStopManager['generateCmd'].set())
       progress.show()
 
     else:
