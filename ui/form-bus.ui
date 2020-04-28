@@ -173,22 +173,8 @@
           </sizepolicy>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="7" column="0">
-           <widget class="QLabel" name="labelWire1">
-            <property name="text">
-             <string>WIRE_1_COLOR</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="labelKlnInit">
-            <property name="text">
-             <string>INIT</string>
-            </property>
-           </widget>
-          </item>
-          <item row="13" column="4">
-           <widget class="QPushButton" name="editorSave">
+          <item row="9" column="4">
+           <widget class="QComboBox" name="fldOBD2">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -197,94 +183,20 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>180</width>
+              <width>80</width>
               <height>0</height>
              </size>
             </property>
-            <property name="text">
-             <string>SAVE</string>
-            </property>
-            <property name="cssClass" stdset="0">
-             <string>btn-success</string>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
             </property>
            </widget>
           </item>
           <item row="9" column="1">
            <widget class="QComboBox" name="fldOBD1">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QComboBox" name="fldLinVersion">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelPreset">
-            <property name="text">
-             <string>PRESET</string>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="5">
-           <widget class="QComboBox" name="fldWire21">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="0">
-           <widget class="QLabel" name="labelOBD1">
-            <property name="text">
-             <string>WIRE_1_OBD</string>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="1">
-           <widget class="QComboBox" name="fldWire10">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -312,15 +224,50 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="labelLinVersion">
+          <item row="13" column="5">
+           <widget class="QPushButton" name="editorCancel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>PointingHandCursor</cursorShape>
+            </property>
             <property name="text">
-             <string>VERSION</string>
+             <string>CANCEL</string>
+            </property>
+            <property name="cssClass" stdset="0">
+             <string>btn-danger</string>
             </property>
            </widget>
           </item>
-          <item row="9" column="4">
-           <widget class="QComboBox" name="fldOBD2">
+          <item row="1" column="4">
+           <widget class="QLabel" name="lblPadding">
+            <property name="text">
+             <string>PADDING</string>
+            </property>
+           </widget>
+          </item>
+          <item row="13" column="2">
+           <widget class="QPushButton" name="btnDelete">
+            <property name="text">
+             <string>DELETE</string>
+            </property>
+            <property name="cssClass" stdset="0">
+             <string>btn-danger</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="5">
+           <widget class="QComboBox" name="fldWire21">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -363,6 +310,167 @@
             </property>
            </widget>
           </item>
+          <item row="13" column="4">
+           <widget class="QPushButton" name="editorSave">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>180</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>SAVE</string>
+            </property>
+            <property name="cssClass" stdset="0">
+             <string>btn-success</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QComboBox" name="fldKlnInit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="fldName">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QComboBox" name="fldWire10">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="labelComment">
+            <property name="text">
+             <string>COMMENT</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+            </property>
+           </widget>
+          </item>
+          <item row="13" column="0" colspan="2">
+           <widget class="QWidget" name="busEditorBtn" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLineEdit" name="fldManufacturer">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="9" column="0">
+           <widget class="QLabel" name="labelOBD1">
+            <property name="text">
+             <string>WIRE_1_OBD</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="fldLinVersion">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelPreset">
+            <property name="text">
+             <string>PRESET</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="labelWire1">
+            <property name="text">
+             <string>WIRE_1_COLOR</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLabel" name="labelSpeed">
+            <property name="text">
+             <string>SPEED</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="1" colspan="5">
            <widget class="QComboBox" name="fldPreset">
             <property name="sizePolicy">
@@ -401,37 +509,10 @@
             </property>
            </widget>
           </item>
-          <item row="13" column="0" colspan="2">
-           <widget class="QWidget" name="busEditorBtn" native="true">
-            <layout class="QHBoxLayout" name="horizontalLayout_3">
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-            </layout>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QComboBox" name="fldKlnInit">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelLinVersion">
+            <property name="text">
+             <string>VERSION</string>
             </property>
            </widget>
           </item>
@@ -458,75 +539,14 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="1" colspan="2">
-           <widget class="QLineEdit" name="fldName">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="3">
-           <widget class="QLabel" name="labelOBD2">
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelKlnInit">
             <property name="text">
-             <string>WIRE_2_OBD</string>
-            </property>
-           </widget>
-          </item>
-          <item row="13" column="5">
-           <widget class="QPushButton" name="editorCancel">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="cursor">
-             <cursorShape>PointingHandCursor</cursorShape>
-            </property>
-            <property name="text">
-             <string>CANCEL</string>
-            </property>
-            <property name="cssClass" stdset="0">
-             <string>btn-danger</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="labelComment">
-            <property name="text">
-             <string>COMMENT</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+             <string>INIT</string>
             </property>
            </widget>
           </item>
           <item row="1" column="3">
-           <widget class="QLabel" name="labelSpeed">
-            <property name="text">
-             <string>SPEED</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="4" colspan="2">
            <widget class="QComboBox" name="fldSpeed">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -542,23 +562,23 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="4">
-           <widget class="QLineEdit" name="fldManufacturer">
+          <item row="9" column="3">
+           <widget class="QLabel" name="labelOBD2">
+            <property name="text">
+             <string>WIRE_2_OBD</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="5">
+           <widget class="QLineEdit" name="fldPadding">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-           </widget>
-          </item>
-          <item row="13" column="2">
-           <widget class="QPushButton" name="btnDelete">
-            <property name="text">
-             <string>DELETE</string>
-            </property>
-            <property name="cssClass" stdset="0">
-             <string>btn-danger</string>
+            <property name="maxLength">
+             <number>3</number>
             </property>
            </widget>
           </item>

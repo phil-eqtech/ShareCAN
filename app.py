@@ -31,7 +31,9 @@ from ui.BusDialog import *
 from ui.SessionDialog import *
 from ui.SignalDialog import *
 from ui.ReplayDialog import *
+from ui.CommandDialog import *
 from ui.AnalysisParamsDialog import *
+from ui.NotepadDialog import *
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -74,6 +76,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     self.signalFrameSrc = None
 
+    self.activeWindows = {}
+
     logging.debug("BUS :\n %s"%self.interfaces.bus)
 
     #
@@ -83,12 +87,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     self.appSignals.switchBus.connect(lambda eventDict:self.switchBus(eventDict['id'], eventDict['dialog']))
     self.appSignals.stopSessionRecording.connect(self.stopSessionRecording)
+    self.appSignals.startSessionLive.connect(lambda eventBool: self.sessionLive())
     self.appSignals.frameRecv.connect(lambda eventDict: self.appendNewBusMsg(eventDict['msg']))
     self.appSignals.gatewayForward.connect(lambda eventDict: self.forwardBusMsg(eventDict['dst'], eventDict['msg']))
     self.appSignals.signalReload.connect(lambda eventBool: self.loadSignals())
-    self.appSignals.filterId.connect(lambda eventList : self.filterId(eventList))
+    self.appSignals.filterHideId.connect(lambda eventList : self.filterHideId(eventList))
+    self.appSignals.filterShowId.connect(lambda eventList : self.filterShowId(eventList))
     self.appSignals.unFilterId.connect(lambda eventBool : self.unFilterId())
     self.appSignals.replaySelection.connect(lambda eventList: self.openReplayDialog(REPLAY.SELECTION, eventList))
+    self.appSignals.replayCommand.connect(lambda eventDict: self.openReplayDialog(REPLAY.COMMAND, eventDict['frames'], eventDict['initMsg'], eventDict['startPause'], eventDict['endPause']))
 
     # Login - BTN signals
     # If no user is set, the user is prompted for his desired login/pwd
@@ -114,14 +121,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.msgTable.setItemDelegate(CustomDelegate(self))
     self.msgTable.linkAppSignals(self.appSignals)
 
+    h = self.msgTable.horizontalHeader()
+    self.msgTable.resizeColumnsToContents()
+    h.setStretchLastSection(True)
+
     for i in range(0, len(FRAME_WINDOW_MODEL)):
-      if hasattr(FRAME_WINDOW_MODEL[i],'w'):
+      if 'w' in FRAME_WINDOW_MODEL[i]:
         self.msgTable.setColumnWidth(i,FRAME_WINDOW_MODEL[i]['w'])
 
-    self.msgTable.resizeColumnsToContents()
-    #self.msgTable.resizeRowsToContents()
-    h = self.msgTable.horizontalHeader()
-    h.setStretchLastSection(True)
 
     # Analysis Window - BTN signals
     self.btnBusCan.clicked.connect(lambda: self.openBusDialog('can'))
@@ -145,11 +152,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.btnSessionSave.clicked.connect(lambda: self.openSessionSaveDialog())
     self.btnSessionForensic.clicked.connect(lambda: self.sessionForensic())
     self.btnSessionNew.clicked.connect(lambda: self.sessionNew())
-
+    self.btnCmdEditor.clicked.connect(lambda :self.openCmdEditorDialog(cmdId=False))
     self.btnSnap.clicked.connect(lambda: self.snapBus())
     self.btnSnapClear.clicked.connect(lambda: self.snapBus(clear=True))
-
     self.msgTable.doubleClicked.connect(lambda x:self.openSignalDialog(x))
+    self.btnNotes.clicked.connect(lambda:self.openNotesDialog())
 
     self.comboKeepDuration.setDisabled(True)
     for k in DISPLAY.DURATION:
@@ -160,17 +167,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     logoIcon = qta.icon('fa5s.car', options=[{'opacity': 0.7, 'color_disabled': 'white'}])
     self.loginLogo.setIcon(logoIcon)
 
-    self.btnBusCan.setIcon(qta.icon('fa5s.network-wired'))
-    self.btnBusLin.setIcon(qta.icon('fa.linode'))
-    self.btnBusLin.setDisabled(True)
-    self.btnBusKln.setIcon(qta.icon('fa5b.kickstarter-k'))
-    self.btnBusKln.setDisabled(True)
+
 
     # Analysis Window - BTN Icons & labels
     self.btnCollapseDisplay.setIcon(qta.icon("ei.chevron-down"))
     self.btnCollapseFilter.setIcon(qta.icon("ei.chevron-down"))
     self.btnCollapseSession.setIcon(qta.icon("ei.chevron-down"))
     btn_options=[{"color":"white","color_disabled":"black"}]
+    self.btnBusCan.setIcon(qta.icon('fa5s.network-wired', options=btn_options))
+    self.btnBusLin.setIcon(qta.icon('fa.linode', options=btn_options))
+    self.btnBusLin.setDisabled(True)
+    self.btnBusKln.setIcon(qta.icon('fa5b.kickstarter-k', options=btn_options))
+    self.btnBusKln.setDisabled(True)
     self.btnSessionReplay.setIcon(qta.icon("mdi.replay", options=btn_options))
     self.btnSessionNew.setIcon(qta.icon("ei.file-new", options=btn_options))
     self.btnSessionRec.setIcon(qta.icon("mdi.record", options=btn_options))
@@ -180,6 +188,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.btnSessionLoad.setIcon(qta.icon("fa5.folder-open", options=btn_options))
     self.btnSessionSave.setIcon(qta.icon("fa5.save", options=btn_options))
     self.btnCmdEditor.setIcon(qta.icon("fa5s.terminal", options=btn_options))
+    self.btnNotes.setIcon(qta.icon("mdi.notebook", options=btn_options))
     self.btnSnap.setIcon(qta.icon("fa5s.camera-retro", options=btn_options))
     self.btnSnapClear.setIcon(qta.icon("mdi.camera-off", options=btn_options))
 
@@ -239,7 +248,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
   def initSessionObject(self):
     self.session = {"name":None, "id":None, "mode":SESSION_MODE.LIVE, "share": False,
-                      "frames":[], "filters":{}, "idList":{}, "owner":None}
+                      "frames":[], "filters":{}, "idList":{}, "owner":None, "frameHistory":{}}
 
   def initDisplayObject(self):
     self.display = {"mask": False, "keep": 30, "signalSrc":SIGNALS.DEFAULT, "hideMenu":False}
@@ -551,7 +560,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.stackedWidget.setCurrentIndex(2)
 
 
-  def filterId(self, cells):
+  def filterHideId(self, cells):
     if len(cells) > 0:
       r = []
       for cell in cells:
@@ -559,6 +568,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
           lbl = "c_%s%s"%(self.frameModel.filteredFrames[cell['row']]['presetLabel'], self.frameModel.filteredFrames[cell['row']]['id'])
           if lbl in self.filterWidgets:
             self.filterWidgets[lbl].setCheckState(0,Qt.Unchecked)
+          r.append(cell['row'])
+      self.msgTable.clearSelection()
+      self.checkActiveIdFilters()
+
+  def filterShowId(self, cells):
+    if len(cells) > 0:
+      r = []
+      for widget in self.filterWidgets:
+        self.filterWidgets[widget].setCheckState(0,Qt.Unchecked)
+      for cell in cells:
+        if not cell['row'] in r:
+          lbl = "c_%s%s"%(self.frameModel.filteredFrames[cell['row']]['presetLabel'], self.frameModel.filteredFrames[cell['row']]['id'])
+          if lbl in self.filterWidgets:
+            self.filterWidgets[lbl].setCheckState(0,Qt.Checked)
           r.append(cell['row'])
       self.msgTable.clearSelection()
       self.checkActiveIdFilters()
@@ -584,13 +607,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.maskStatic = self.comboKeepDuration.currentData()
 
   def snapBus(self, clear=False):
-    for bus in self.activeBus:
-      for id in self.activeBus[bus]['idValues']:
+    for bus in self.session['frameHistory']:
+      for id in self.session['frameHistory'][bus]:
         if clear == False:
-          self.activeBus[bus]['idValues'][id]['snapValues'] = self.activeBus[bus]['idValues'][id]['values'].copy()
+          for i in self.session['frameHistory'][bus][id]['values']:
+            self.session['frameHistory'][bus][id]['snapValues'][i] = self.session['frameHistory'][bus][id]['values'][i].copy()
         else:
-          self.activeBus[bus]['idValues'][id]['snapValues'] = {}
-      logging.debug(self.activeBus[bus]['idValues'][str(0x188)]['snapValues'])
+          self.session['frameHistory'][bus][id]['snapValues'] = {}
 
   #
   # SESSION Methods
@@ -603,7 +626,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.toggleButtonStatus(btnToEnabled)
 
     self.lblSessionFrames.setText("0")
-    self.lblSessionName.setText(QCoreApplication.translate("SESSION","NO_SESSION"))
+    self.lblSessionName.setText(QCoreApplication.translate("MainWindow","NO_SESSION"))
     self.initSessionObject()
 
   def unlockSessionBtn(self):
@@ -626,6 +649,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     for btn in sessionBtn:
       if btn.isEnabled() and btn != btnWidget:
         btn.setProperty("cssClass","btn-primary")
+        btn.setStyle(btn.style())
+      elif not btn.isEnabled() and btn != btnWidget:
+        btn.setProperty("cssClass","btn-disabled")
         btn.setStyle(btn.style())
     btnWidget.setProperty("cssClass","btn-success")
     btnWidget.setStyle(btnWidget.style())
@@ -666,8 +692,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     self.db.sessions.update({"id": self.session['id']},
                             {"analysis": self.analysis['id'], "comment": self.session['comment'],
-                              "id": self.session['id'], "name": self.session['name'],
-                              "frames": [], "owner": self.user['uid'],
+                              "id": self.session['id'], "name": self.session['name'], "owner": self.user['uid'],
                               "updateTime": time.time(), "share": self.session['share'],
                               "createTime":self.session['createTime']}, True)
     msgGroupList = []
@@ -679,7 +704,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       msg['msg'] = list(msg['msg'])
       progress.setValue(i)
       QApplication.processEvents()
-      msgGroupList.append({"session":self.session['id'], "msg":msg})
+      msgGroupList.append({"session":self.session['id'], "msg":{
+                            "id":msg['id'], "ts":msg['ts'], "len":msg['len'], "type":msg['type'],
+                            "extendedId":msg['extendedId'],"msg":msg['msg'], "preset":msg['preset'],
+                            "presetLabel":msg['presetLabel'], "busName": msg['busName']}})
+
       if len(msgGroupList) > FRAME_RECORD_GROUP_LIMIT:
         try:
           self.db.frames.insert_many(msgGroupList)
@@ -696,7 +725,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.lblSessionName.setText(self.session['name'])
 
   def sessionLive(self):
-    if self.session["mode"] == SESSION_MODE.FORENSIC:
+    if self.session["mode"] <= SESSION_MODE.IDLE:
       self.frameModel.clearElt()
     self.session["mode"] = SESSION_MODE.LIVE
     self.sessionSetActiveBtn(self.btnSessionLive)
@@ -748,11 +777,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     if currentStatus == True:
       self.rightMenu.setVisible(False)
       self.btnShowRightMenu.setText(QCoreApplication.translate("MainWindow","SHOW_MENU"))
-      self.btnShowRightMenu.setIcon(qta.icon('ei.eye-open'))
+      self.btnShowRightMenu.setIcon(qta.icon('ei.eye-open', options=[{"color":"white","color_disabled":"black"}]))
     else:
       self.rightMenu.setVisible(True)
       self.btnShowRightMenu.setText(QCoreApplication.translate("MainWindow","HIDE_MENU"))
-      self.btnShowRightMenu.setIcon(qta.icon('ei.eye-close'))
+      self.btnShowRightMenu.setIcon(qta.icon('ei.eye-close', options=[{"color":"white","color_disabled":"black"}]))
 
   def haltSession(self):
     self.session['mode'] = SESSION_MODE.IDLE
@@ -827,20 +856,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.unlockSessionBtn()
       self.session['frames'].append(msg.copy())
       self.lblSessionFrames.setText(str(len(self.session['frames'])))
-      # ADD BUS info to session
 
     # Live mode only, overwrite ID & apply static mask
     if self.session['mode'] > SESSION_MODE.IDLE:
       timer = time.time()
       for idx in range(0,len(self.frameModel['frames'])):
-        if self.frameModel['frames'][idx]['id'] == msg['id'] and self.frameModel['frames'][idx]['busId'] == msg['busId']:
-          self.frameModel['frames'].pop(idx)
-          break
+        if self.frameModel['frames'][idx]['id'] == msg['id'] and self.frameModel['frames'][idx]['preset'] == msg['preset']:
+            self.frameModel['frames'].pop(idx)
+            break
+
       if self.maskStatic != False:
         for idx in range(0,len(self.frameModel['frames'])):
           if self.frameModel['frames'][idx]['lastChange'] + self.maskStatic < timer:
             self.frameModel['frames'].pop(idx)
             break
+
+    # Analyse message to hightlight changing values
+    msg = self.analyseMsg(msg)
 
     # Signals & ecu
     if msg['type'] in self.signals and msg['preset'] in self.signals[msg['type']] and msg['id'] in self.signals[msg['type']][msg['preset']]:
@@ -884,6 +916,91 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       if self.signalFrameSrc != None:
         if self.signalFrameSrc['id'] == msg['id'] and self.signalFrameSrc['preset'] == msg['preset']:
           self.appSignals.signalEditorRefresh.emit(msg)
+
+
+  def analyseMsg(self, msg):
+    id = str(msg['id'])
+    if not msg['preset'] in self.session['frameHistory']:
+      self.session['frameHistory'][msg['preset']] = {}
+
+    if not id in self.session['frameHistory'][msg['preset']]:
+      self.session['frameHistory'][msg['preset']][id] = {"lastValue": [], "values": {}, "snapValues": {},
+                                    "lastTs":0, "lastChange":0, "count":0, "prevBytes":[], "lastChanges":[]}
+
+
+
+    self.session['frameHistory'][msg['preset']][id]['count'] += 1
+    msg['count'] = self.session['frameHistory'][msg['preset']][id]['count']
+
+    if self.session['frameHistory'][msg['preset']][id]['lastTs'] == 0:
+      msg['period'] = 0
+    else:
+      msg['period'] = int((msg['ts'] - self.session['frameHistory'][msg['preset']][id]['lastTs'])*1000)
+
+    if msg['period'] < 0:
+      msg['period'] = 0
+
+    self.session['frameHistory'][msg['preset']][id]['lastTs'] = msg['ts']
+
+    msgDetails = self.analyseMsgBytes(id, msg)
+
+    msg['bytes'] = msgDetails[0]
+    msg['hasChangedValue'] = msgDetails[1]
+
+    if msg['hasChangedValue'] == True:
+      self.session['frameHistory'][msg['preset']][id]['lastChange'] = msg['ts']
+    msg['lastChange'] = self.session['frameHistory'][msg['preset']][id]['lastChange']
+
+    self.session['frameHistory'][msg['preset']][id]['lastValue'] = msg['msg']
+
+    return msg
+
+
+  def analyseMsgBytes(self, id, msg):
+    results = []
+    hasChangedValue = False
+
+    prevValues = self.session['frameHistory'][msg['preset']][id]
+
+    for i in range(0, len(msg['msg'])):
+      byteDetails = {}
+      byteRef = str(i)
+      byteDetails['value'] = msg['msg'][i]
+
+      if len(prevValues["lastValue"]) >= i+1:
+        if prevValues["lastValue"][i] != msg['msg'][i]:
+          if not byteRef in prevValues['snapValues'] or not msg['msg'][i] in prevValues['snapValues'][byteRef]:
+              byteDetails['isChanged'] = True
+              byteDetails['lastChange'] = time.time()
+              byteDetails['prevByte'] = prevValues["lastValue"][i]
+              hasChangedValue = True
+          else:
+            byteDetails['isChanged'] = False
+            byteDetails['prevByte'] = prevValues["prevBytes"][i]
+            byteDetails['lastChange'] = prevValues["lastChanges"][i]
+        else:
+          byteDetails['isChanged'] = False
+          byteDetails['prevByte'] = prevValues["prevBytes"][i]
+          byteDetails['lastChange'] = prevValues["lastChanges"][i]
+      else:
+        byteDetails['isChanged'] = True
+        byteDetails['prevByte'] = None
+        byteDetails['lastChange'] = time.time()
+
+        self.session['frameHistory'][msg['preset']][id]['prevBytes'].append(None)
+        self.session['frameHistory'][msg['preset']][id]['lastChanges'].append(None)
+        hasChangedValue = True
+      self.session['frameHistory'][msg['preset']][id]['prevBytes'][i] = byteDetails['prevByte']
+      self.session['frameHistory'][msg['preset']][id]['lastChanges'][i] = byteDetails['lastChange']
+
+      if not byteRef in prevValues['values']:
+        self.session['frameHistory'][msg['preset']][id]['values'][byteRef] = []
+
+      if not msg['msg'][i] in self.session['frameHistory'][msg['preset']][id]['values'][byteRef]:
+        self.session['frameHistory'][msg['preset']][id]['values'][byteRef].append(msg['msg'][i])
+
+      results.append(byteDetails)
+    return [results, hasChangedValue]
 
 
   def parseSignal(self, signal, msg):
@@ -937,56 +1054,58 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     progress.show()
     return progress
 
+
   #New analysis management
   def openAnalysisParamsDialog(self, newAnalysis=True):
     dlg = AnalysisParamsDialog(self, newAnalysis)
     dlg.setWindowFlags(Qt.Dialog)
-    dlg.setGeometry(dlg.x(), dlg.y(), 460, 200)
-    dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y()+90);
+    self.setDialogSize(dlg, 460, 200)
     dlg.setStyleSheet(self.cssContent)
     dlg.exec_()
+
 
   #Devices management
   def openDevicesDialog(self):
     dlg = DevicesDialog(self.interfaces)
     dlg.setWindowFlags(Qt.Dialog)
-    dlg.setGeometry(dlg.x(), dlg.y(), 800, 200)
-    dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y()+90);
+    self.setDialogSize(dlg, 800, 200)
     dlg.setStyleSheet(self.cssContent)
     dlg.exec_()
+
 
   # Bus management
   def openBusDialog(self, busType = None):
     dlg = BusDialog(self, busType)
     dlg.setWindowFlags(Qt.Dialog)
-    dlg.setGeometry(dlg.x(), dlg.y(), 800, 400)
-    dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y() + 90);
+    self.setDialogSize(dlg, 800, 400)
     dlg.setStyleSheet(self.cssContent)
     dlg.exec_()
+
 
   # Session management
   def openSessionSaveDialog(self):
     self.sessionPause()
     dlg = SessionDialog(self, saveSession = True)
     dlg.setWindowFlags(Qt.Dialog)
-    dlg.setGeometry(dlg.x(), dlg.y(), 640, 260)
-    dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y() + 90);
+    self.setDialogSize(dlg, 640, 260)
     dlg.setStyleSheet(self.cssContent)
     r = dlg.exec_()
     if r == 1:
       self.sessionSave()
 
+
   def openSessionLoadDialog(self):
     self.sessionPause()
     dlg = SessionDialog(self, loadSession = True)
     dlg.setWindowFlags(Qt.Dialog)
-    dlg.setGeometry(dlg.x(), dlg.y(), 640, 300)
-    dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y() + 90);
+    self.setDialogSize(dlg, 640, 300)
     dlg.setStyleSheet(self.cssContent)
     r = dlg.exec_()
     if r == 1:
       sessionCursor = self.db.sessions.find({"id": self.session['id']}, {"_id":0})
       progress = None
+      self.idFilter.clear()
+      self.filterWidgets = {}
       if sessionCursor.count() == 1:
         self.initSessionObject()
         for elt in sessionCursor[0]:
@@ -996,14 +1115,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if framesCursor.count() > 0:
           progress = self.openProgressDialog("LOAD_SESSION","LOAD_SESSION_DETAILS",framesCursor.count())
           i = 1
+          self.session['mode'] = SESSION_MODE.RECORDING
           for frame in framesCursor:
-            self.session['frames'].append(frame['msg'])
+            self.appendNewBusMsg(frame['msg'])
             progress.setValue(i)
             i+= 1
             QApplication.processEvents()
 
-
+          self.sessionForensic()
         self.session['mode'] = SESSION_MODE.FORENSIC
+
       if self.session['owner'] != self.user["uid"]:
         btnClass = "btn-disabled"
         isDisabled = True
@@ -1019,8 +1140,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       self.lblSessionName.setText(self.session['name'])
       self.lblSessionFrames.setText(str(len(self.session['frames'])))
 
-      self.idFilter.clear()
-      self.filterWidgets = {}
       self.frameModel.lastRefresh = 0
       self.frameModel.clearElt()
       self.frameModel.sort(self.frameModel.sortCol, self.frameModel.sortOrder)
@@ -1028,9 +1147,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         progress.close()
       self.sessionForensic()
 
+
   # Message replay
-  def openReplayDialog(self, mode=REPLAY.SESSION, cells=None):
-    self.sessionPause()
+  def openReplayDialog(self, mode=REPLAY.SESSION, cells=None, initMsg = [], startPause=0, endPause=0):
+    if 'replay' in self.activeWindows:
+      return False
+
+    if self.session['mode'] == SESSION_MODE.RECORDING:
+      self.sessionPause()
+
     frames = None
     if mode == REPLAY.SELECTION:
       if len(cells) == 0:
@@ -1042,22 +1167,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
           if not cell['row'] in r:
             frames.append(self.frameModel.filteredFrames[cell['row']])
             r.append(cell['row'])
+    elif mode == REPLAY.COMMAND:
+      frames = cells
 
-    dlg = ReplayDialog(self, mode, frames)
-    dlg.setWindowFlags(Qt.Dialog)
-    dlg.setGeometry(dlg.x(), dlg.y(), 640, 320)
-    dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y() + 90);
-    dlg.setStyleSheet(self.cssContent)
-    r = dlg.exec_()
+    self.activeWindows['replay'] = ReplayDialog(self, mode, frames, initMsg, startPause, endPause)
+    self.activeWindows['replay'].setWindowFlags(Qt.Dialog)
+    self.setDialogSize(self.activeWindows['replay'], 640, 320)
+    self.activeWindows['replay'].setStyleSheet(self.cssContent)
+    self.activeWindows['replay'].setWindowTitle(QCoreApplication.translate("REPLAY","REPLAY_WINDOW"))
+    self.activeWindows['replay'].setWindowModality(Qt.NonModal)
+    self.activeWindows['replay'].show()
+    r = self.activeWindows['replay'].exec_()
     if r == REPLAY.UPDATE_SESSION:
       self.lblSessionFrames.setText(str(len(self.session['frames'])))
-
       self.idFilter.clear()
       self.filterWidgets = {}
       self.frameModel.lastRefresh = 0
+      # Reimport data
+      frames = self.session['frames'].copy()
+      self.initSessionObject()
+      self.sessionRecord()
+      for f in frames:
+        self.appendNewBusMsg(f)
       self.frameModel.clearElt()
       self.frameModel.sort(self.frameModel.sortCol, self.frameModel.sortOrder)
       self.sessionForensic()
+    del self.activeWindows['replay']
+
 
   # Signal editor
   def openSignalDialog(self, frameId=None):
@@ -1067,17 +1203,50 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
       dlg = SignalDialog(self, src)
       dlg.setWindowFlags(Qt.Dialog)
-      dlg.setGeometry(dlg.x(), dlg.y(), 800, 320)
-      dlg.move(self.x() + (self.width() - dlg.width()) / 2,  self.y() + 90);
+      self.setDialogSize(dlg, 800, 320)
       dlg.setStyleSheet(self.cssContent)
       r = dlg.exec_()
       self.signalFrameSrc = None
+
+
+  # Command editor
+  def openCmdEditorDialog(self, cmdId=False):
+    if 'cmdEditor' in self.activeWindows:
+      return False
+    self.activeWindows['cmdEditor'] = CommandDialog(self, cmdId)
+    self.setDialogSize(self.activeWindows['cmdEditor'], 1024, 320)
+    self.activeWindows['cmdEditor'].setStyleSheet(self.cssContent)
+    self.activeWindows['cmdEditor'].setWindowTitle(QCoreApplication.translate("CMD","CMD_EDITOR"))
+    self.activeWindows['cmdEditor'].setWindowModality(Qt.NonModal)
+    self.activeWindows['cmdEditor'].show()
+    self.activeWindows['cmdEditor'].exec_()
+    del self.activeWindows['cmdEditor']
+
+
+  # Notepad
+  def openNotesDialog(self):
+    if 'notepad' in self.activeWindows:
+      return False
+    self.activeWindows['notepad'] = NotepadDialog(self)
+    self.setDialogSize(self.activeWindows['notepad'], 800, 320)
+    self.activeWindows['notepad'].setStyleSheet(self.cssContent)
+    self.activeWindows['notepad'].setWindowTitle(QCoreApplication.translate("GENERIC","NOTEPAD"))
+    self.activeWindows['notepad'].setWindowModality(Qt.NonModal)
+    self.activeWindows['notepad'].show()
+    self.activeWindows['notepad'].exec_()
+    del self.activeWindows['notepad']
+
+
+  def setDialogSize(self, dialog, width=800, height=600, top=90):
+    dialog.setGeometry(dialog.x(), dialog.y(), width, height)
+    dialog.move(self.x() + (self.width() - dialog.width()) / 2,  self.y() + top)
 
 
   def centerMsg(self, msgWidget):
     msgWidget.setGeometry(self.x(), self.y(), 300, 180)
     msgWidget.move(self.x() + (self.width() - msgWidget.width()) / 2,
                    self.y() + (self.height() - msgWidget.height()) / 2)
+
 
   # Clean Ctrl+C / Ctrl+X commands to clean HTML tags
   def keyPressEvent(self, event):
@@ -1114,9 +1283,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       if threadName in self.threads:
         self.threads[threadName].join()
 
+    for windowName in self.activeWindows:
+      self.activeWindows[windowName].close()
+
 
 if __name__ == '__main__':
   app = QApplication(sys.argv)
+  # Internationalization support
+  translator = QTranslator()
+  locale = QLocale.system().name()
+  translations_found = translator.load("./i18n/%s.qm"%locale)
+  if not translations_found:
+    translator.load("./i18n/en_EN.qm")
+  app.installTranslator(translator)
+
   window = MainWindow()
   # On application close, clean stuff
   atexit.register(window.killRunningThreads)

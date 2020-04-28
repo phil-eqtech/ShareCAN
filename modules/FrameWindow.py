@@ -26,14 +26,19 @@ class TableView(QTableView):
         cells.append({"row":row, "col":column})
 
     self.menu = QMenu(self)
-    filterAction = QAction(QCoreApplication.translate("MENU","FILTER_ID"), self)
-    filterAction.setIcon(qta.icon('fa5s.eye-slash'))
-    filterAction.triggered.connect(lambda: self.appSignals.filterId.emit(cells))
+    filterHideAction = QAction(QCoreApplication.translate("MENU","FILTER_HIDE_ID"), self)
+    filterHideAction.setIcon(qta.icon('fa5s.eye-slash'))
+    filterHideAction.triggered.connect(lambda: self.appSignals.filterHideId.emit(cells))
+
+    filterShowAction = QAction(QCoreApplication.translate("MENU","FILTER_ONLY_ID"), self)
+    filterShowAction.setIcon(qta.icon('fa5s.filter'))
+    filterShowAction.triggered.connect(lambda: self.appSignals.filterShowId.emit(cells))
+
     unFilterAction = QAction(QCoreApplication.translate("MENU","UNFILTER_ID"), self)
     unFilterAction.setIcon(qta.icon('mdi.eye-plus'))
     unFilterAction.triggered.connect(lambda: self.appSignals.unFilterId.emit(True))
 
-    replayAction = QAction(QCoreApplication.translate("MENU","REPLY"), self)
+    replayAction = QAction(QCoreApplication.translate("MENU","REPLAY"), self)
     replayAction.setIcon(qta.icon('mdi.replay'))
     replayAction.triggered.connect(lambda: self.appSignals.replaySelection.emit(cells))
 
@@ -44,7 +49,8 @@ class TableView(QTableView):
     unFlagAction.setIcon(qta.icon('mdi.flag-remove-outline'))
     unFlagAction.triggered.connect(lambda: self.appSignals.flagId.emit([]))
 
-    self.menu.addAction(filterAction)
+    self.menu.addAction(filterHideAction)
+    self.menu.addAction(filterShowAction)
     self.menu.addAction(unFilterAction)
     self.menu.addSeparator()
     self.menu.addAction(replayAction)
@@ -155,7 +161,7 @@ class framesTableModel(QAbstractTableModel):
         # section is the index of the column/row.
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
-                return QCoreApplication.translate("FRAME",self.columnLabel[section]['label'])
+                return QCoreApplication.translate("MainWindow",self.columnLabel[section]['label'])
             if orientation == Qt.Vertical:
                 return str(section +1)
 
@@ -178,6 +184,8 @@ class framesTableModel(QAbstractTableModel):
             return f['msgColored']
           elif self.columnLabel[c]['field'] == 'ts':
             return "{:.3f}".format(f['ts'] - self.ts)
+          elif self.columnLabel[c]['field'] == 'period':
+            return "%s ms"%f['period']
           else:
             return str(self.filteredFrames[index.row()][self.columnLabel[index.column()]['field']])
 
@@ -225,4 +233,3 @@ class framesTableModel(QAbstractTableModel):
 
     def updateSignals(self, signals):
       self.signals = signals
-      logging.debug("Signals updated to : %s"%signals)

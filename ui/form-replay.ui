@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>600</width>
-    <height>310</height>
+    <height>418</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -28,7 +28,7 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
-     <layout class="QFormLayout" name="formLayout">
+     <layout class="QGridLayout" name="gridLayout_2">
       <property name="leftMargin">
        <number>0</number>
       </property>
@@ -41,6 +41,61 @@
       <property name="bottomMargin">
        <number>6</number>
       </property>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="checkLoop">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QLabel" name="titleLiveReplay">
+        <property name="text">
+         <string>LIVE_REPLAY</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="lblFrames">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="titleReplayInfo">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>REPLAY_INFO</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="lblMode">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="titleLoop">
+        <property name="text">
+         <string>LOOP_REPLAY</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="titleMode">
+        <property name="text">
+         <string>MODE</string>
+        </property>
+       </widget>
+      </item>
       <item row="2" column="0">
        <widget class="QLabel" name="titleFrames">
         <property name="font">
@@ -54,51 +109,44 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="titleLoop">
+      <item row="3" column="3">
+       <widget class="QCheckBox" name="checkLive">
         <property name="text">
-         <string>LOOP_REPLAY</string>
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <property name="tristate">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="QLabel" name="lblFrames">
+      <item row="1" column="2">
+       <widget class="QLabel" name="titleId">
+        <property name="text">
+         <string>CURRENT_ID</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="titleMsg">
+        <property name="text">
+         <string>CURRENT_MSG</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QLabel" name="lblMsg">
         <property name="text">
          <string/>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="QCheckBox" name="checkLoop">
+      <item row="1" column="3">
+       <widget class="QLabel" name="lblId">
         <property name="text">
          <string/>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="titleMode">
-        <property name="text">
-         <string>MODE</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLabel" name="lblMode">
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0" colspan="2">
-       <widget class="QLabel" name="label">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>REPLAY_INFO</string>
         </property>
        </widget>
       </item>
@@ -205,112 +253,7 @@
       <property name="rightMargin">
        <number>0</number>
       </property>
-      <item row="4" column="1">
-       <widget class="QPushButton" name="btnSmartReplay">
-        <property name="cursor">
-         <cursorShape>PointingHandCursor</cursorShape>
-        </property>
-        <property name="text">
-         <string>SMART_REPLAY</string>
-        </property>
-        <property name="cssClass" stdset="0">
-         <string>btn-primary</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QPushButton" name="btnRevert">
-        <property name="cursor">
-         <cursorShape>PointingHandCursor</cursorShape>
-        </property>
-        <property name="text">
-         <string>REVERT</string>
-        </property>
-        <property name="cssClass" stdset="0">
-         <string>btn-primary</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QPushButton" name="btnAddCommand">
-        <property name="text">
-         <string>ADD_COMMAND</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0" colspan="4">
-       <widget class="QProgressBar" name="progress">
-        <property name="value">
-         <number>0</number>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="2">
-       <widget class="QPushButton" name="btnSlice">
-        <property name="cursor">
-         <cursorShape>PointingHandCursor</cursorShape>
-        </property>
-        <property name="text">
-         <string>SLICE</string>
-        </property>
-        <property name="cssClass" stdset="0">
-         <string>btn-primary</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="3">
-       <widget class="QPushButton" name="btnCancel">
-        <property name="cursor">
-         <cursorShape>PointingHandCursor</cursorShape>
-        </property>
-        <property name="text">
-         <string>CANCEL</string>
-        </property>
-        <property name="cssClass" stdset="0">
-         <string>btn-danger</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="3">
-       <widget class="QPushButton" name="btnUpdateSession">
-        <property name="cursor">
-         <cursorShape>PointingHandCursor</cursorShape>
-        </property>
-        <property name="text">
-         <string>UPDATE_SESSION</string>
-        </property>
-        <property name="cssClass" stdset="0">
-         <string>btn-primary</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QPushButton" name="btnReplayAll">
-        <property name="cursor">
-         <cursorShape>PointingHandCursor</cursorShape>
-        </property>
-        <property name="text">
-         <string>REPLAY_ALL</string>
-        </property>
-        <property name="cssClass" stdset="0">
-         <string>btn-primary</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="3">
-       <widget class="QPushButton" name="btnNext">
-        <property name="cursor">
-         <cursorShape>PointingHandCursor</cursorShape>
-        </property>
-        <property name="text">
-         <string>NEXT</string>
-        </property>
-        <property name="cssClass" stdset="0">
-         <string>btn-primary</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
+      <item row="3" column="0">
        <widget class="QPushButton" name="btnPrevious">
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
@@ -323,13 +266,13 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QPushButton" name="btnUpdate">
+      <item row="6" column="0">
+       <widget class="QPushButton" name="btnReplayAll">
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
         </property>
         <property name="text">
-         <string>UPDATE</string>
+         <string>REPLAY_ALL</string>
         </property>
         <property name="cssClass" stdset="0">
          <string>btn-primary</string>
@@ -337,6 +280,19 @@
        </widget>
       </item>
       <item row="3" column="1">
+       <widget class="QPushButton" name="btnRevert">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>REVERT</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-primary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
        <widget class="QPushButton" name="btnReplay">
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
@@ -349,21 +305,59 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="titlePlaying">
+      <item row="5" column="3">
+       <widget class="QPushButton" name="btnCancelAll">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
         <property name="text">
-         <string>PLAYING</string>
+         <string>CANCEL</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-danger</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="1" colspan="2">
-       <widget class="QLabel" name="lblFrameCount">
+      <item row="4" column="3">
+       <widget class="QPushButton" name="btnCancel">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
         <property name="text">
-         <string/>
+         <string>CANCEL</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-danger</string>
         </property>
        </widget>
       </item>
       <item row="3" column="2">
+       <widget class="QPushButton" name="btnSlice">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>SLICE</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-primary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QPushButton" name="btnUpdate">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>UPDATE</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-primary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
        <widget class="QPushButton" name="btnStop">
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
@@ -373,6 +367,125 @@
         </property>
         <property name="cssClass" stdset="0">
          <string>btn-danger</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QPushButton" name="btnSliceAll">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>SLICE</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-primary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="2">
+       <widget class="QPushButton" name="btnAddCommand">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>ADD_COMMAND</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QPushButton" name="btnSmartReplay">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>SMART_REPLAY</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-primary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="titlePlaying">
+        <property name="text">
+         <string>PLAYING</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QPushButton" name="btnNext">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>NEXT</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-primary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="4">
+       <widget class="QProgressBar" name="progress">
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="3">
+       <widget class="QPushButton" name="btnUpdateSession">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>UPDATE_SESSION</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-primary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QPushButton" name="btnBack">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>BACK_3_SEC</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-primary</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QPushButton" name="btnPause">
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>PAUSE</string>
+        </property>
+        <property name="cssClass" stdset="0">
+         <string>btn-danger</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1" colspan="2">
+       <widget class="QLabel" name="lblFrameCount">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="4">
+       <widget class="QLabel" name="lblFrameId">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>

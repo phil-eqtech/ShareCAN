@@ -19,9 +19,9 @@ class ModelDialog(QDialog):
     titleWidget.setLayout(layoutTitle)
     self.dialogTitle = QLabel("TITLE")
     font = QFont()
-    font.setPointSize(14)
-    font.setBold(False)
-    font.setWeight(50)
+    font.setPointSize(12)
+    font.setBold(True)
+    #font.setWeight(50)
     self.dialogTitle.setFont(font)
     layoutTitle.addWidget(self.dialogTitle)
     sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
@@ -66,8 +66,10 @@ class ModelDialog(QDialog):
     if type(bottomButtons) == list:
       for btn in bottomButtons:
         self.bottomLayout.addWidget(btn)
+        btn.setAutoDefault(False)
     else:
       self.bottomLayout.addWidget(bottomButtons)
+      bottomButtons.setAutoDefault(False)
 
   def getMainVariables(self, mainWindowRef):
     self.db = mainWindowRef.db

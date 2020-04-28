@@ -15,6 +15,8 @@ files = [{"ui":"main-window", "template":"MainWindow"},
           {"ui":"form-sessions", "template":"SessionsForm"},
           {"ui":"form-signals", "template":"SignalsForm"},
           {"ui":"form-replay", "template":"ReplayForm"},
+          {"ui":"form-commands", "template":"CommandsForm"},
+          {"ui":"form-notepad", "template":"NotepadForm"},
           {"ui":"form-analysis_params", "template":"AnalysisParamsForm"},]
 
 # MainWindow

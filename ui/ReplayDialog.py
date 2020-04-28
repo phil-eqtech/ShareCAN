@@ -18,7 +18,7 @@ class ReplayUi(QWidget, Ui_REPLAY):
 
 
 class ReplayDialog(ModelDialog):
-  def __init__(self, refWindow, mode=REPLAY.SESSION, frames=None):
+  def __init__(self, refWindow, mode=REPLAY.SESSION, frames=None, initMsg=[], startPause=0, endPause=0):
     super().__init__()
 
     self.getMainVariables(refWindow)
@@ -39,8 +39,12 @@ class ReplayDialog(ModelDialog):
 
     # Load selected frames
     self.replayMode = mode
+
     self.smartMode = False
     self.frames = []
+    self.initMsg = initMsg
+    self.startPause = startPause
+    self.endPause = endPause
 
     # Replay variables
     self.framesBuffer = []
@@ -50,16 +54,20 @@ class ReplayDialog(ModelDialog):
     self.replayLock = threading.Event()
 
     self.loop = False
+    self.live = False
+    self.timer = None
+
+    self.replayCurrentFrame = 0
+    self.replayIsPaused = False
 
     if self.replayMode == REPLAY.SESSION:
       self.frames = self.session['frames']
-    if self.replayMode == REPLAY.SELECTION:
+    elif self.replayMode == REPLAY.SELECTION:
       orderedFrames= sorted(frames,
                             key=lambda k: (k['ts']))
-
       self.frames = orderedFrames
-
-      #self.btnUpdateSession.hide()
+    elif self.replayMode == REPLAY.COMMAND:
+      self.frames = frames
 
     self.sliceNumber = 0
     self.slices = [{},{},{}]
@@ -80,9 +88,11 @@ class ReplayDialog(ModelDialog):
                           key=lambda k: (self.requiredBus[k]['type'], self.requiredBus[k]['name'], self.requiredBus[k]['speed']))
 
     # Signals
-    #self.body.btnSmartReplay.clicked.connect(lambda: self.initReplay(True))
+    self.appSignals.updateProgressBar.connect(lambda eventList: self.updateProgressBar(eventList))
+
     self.body.btnReplayAll.clicked.connect(lambda: self.initReplay())
     self.body.btnCancel.clicked.connect(lambda: self.cancelReplay())
+    self.body.btnCancelAll.clicked.connect(lambda: self.cancelReplay())
     self.body.btnSmartReplay.clicked.connect(lambda: self.initReplay(smartMode=True))
     self.body.btnRevert.clicked.connect(lambda: self.sliceFrames(revert=True))
     self.body.btnSlice.clicked.connect(lambda: self.sliceFrames())
@@ -92,18 +102,25 @@ class ReplayDialog(ModelDialog):
     self.body.btnStop.clicked.connect(self.threadStopManager['replay'].set)
     self.body.btnUpdate.clicked.connect(lambda: self.convertSliceToSession())
     self.body.btnUpdateSession.clicked.connect(lambda: self.updateSession())
+    self.body.btnPause.clicked.connect(lambda: self.pauseReplay())
+    self.body.btnBack.clicked.connect(lambda: self.replayGetBackward())
+    self.body.btnSliceAll.clicked.connect(lambda: self.sliceFrames(startAtCurrentIndex=True))
     #self.body.btnAddCommand.clicked.connect(lambda: self.createCommand())
     self.body.checkLoop.toggled.connect(lambda x:self.updateLoop(x))
+    self.body.checkLive.toggled.connect(lambda x:self.updateLive(x))
 
     # Editing grid
     self.drawDialogBody()
+
 
   def closeDialog(self):
     self.threadStopManager['replay'].set()
     self.reject()
 
+
   def closeEvent(self, event):
     self.threadStopManager['replay'].set()
+
 
   def selfInitInterfaces(self):
     self.validBus = {}
@@ -130,6 +147,9 @@ class ReplayDialog(ModelDialog):
   def updateLoop(self, value):
     self.loop = value
 
+  def updateLive(self, value):
+    self.live = value
+
   def switchSlice(self, sliceOrder = SLICE.NEXT):
     self.threadStopManager['replay'].clear()
     self.sliceNumber += sliceOrder
@@ -140,34 +160,49 @@ class ReplayDialog(ModelDialog):
 
     self.framesBuffer = self.slices[self.sliceNumber]['frames']
     self.bufferLen = len(self.framesBuffer)
-    logging.debug("Frame buffer start at %s and stop at %s"%(self.slices[self.sliceNumber]['start'],self.slices[self.sliceNumber]['end']))
-    logging.debug("Slices frame buffer in switchSlice : %s"%len(self.framesBuffer))
     self.setProgressBar()
     self.displayBufferRange(self.slices[self.sliceNumber]['start'], self.slices[self.sliceNumber]['end'])
+    self.replayCurrentFrame = 0
     self.replayBufferedFrames()
 
 
-  def sliceFrames(self, init=False, revert=False):
+  def sliceFrames(self, init=False, revert=False, startAtCurrentIndex=False):
     self.threadStopManager['replay'].set()
     if init == True:
       start = 0
       end = len(self.frames)
     elif revert == True:
-      logging.debug("Reverting")
       start = self.slices[0]["start"]
       end = self.slices[2]['end']*2
       if (end >= len(self.frames)):
         end = len(self.frames)
         start = round(self.slices[0]["start"]/2)
+    elif startAtCurrentIndex != False:
+      if self.replayCurrentFrame !=0:
+        idx = self.replayCurrentFrame
+        start = 0
+        ts = self.framesBuffer[self.replayCurrentFrame]['ts']
+        for i in range(0, idx):
+          if ts - self.framesBuffer[idx - i]['ts'] >= REPLAY.BACKTIME:
+            start = idx - i
+            break
+        delta = idx - start
+        end = start + delta * 2
+        if end > len(self.frames):
+          end = len(self.frames)
+      else:
+        start = 0
+        end = len(self.frames)
+      self.switchSmartButtons(visible=True)
+      self.switchAltButtons(visible=False)
+      self.smartMode = True
+      self.replayCurrentFrame = 0
     else:
       start = self.slices[self.sliceNumber]['start']
       end = self.slices[self.sliceNumber]['end']
 
     sliceLen = round((end - start)/ 2)
     sliceInc = round(sliceLen / 2)
-    logging.debug("Slicing start at %s and stop at %s"%(start, end))
-    logging.debug("Slice length %s"%(sliceLen))
-    logging.debug("Slice inc %s"%(sliceInc))
 
     self.slices[0] = {"start": start, "end":start+sliceLen, "frames":self.frames[start: (start+sliceLen)]}
     self.slices[1] = {"start": start+sliceInc, "end":start+sliceLen+sliceInc, "frames":self.frames[(start+sliceInc): (start+sliceLen+sliceInc)]}
@@ -176,26 +211,32 @@ class ReplayDialog(ModelDialog):
     self.sliceNumber = 0
     self.switchSlice(SLICE.SELF)
 
+
   def convertSliceToSession(self):
     self.threadStopManager['replay'].set()
     self.frames = self.slices[self.sliceNumber]['frames']
     self.body.lblFrames.setText(str(len(self.frames)))
     self.switchSmartButtons(visible=False)
+    self.switchAltButtons(visible=False)
     self.switchMainButtons(disabled = False)
+
 
   def updateSession(self):
     self.session['frames'] = self.frames.copy()
     self.done(REPLAY.UPDATE_SESSION)
 
+
   def initReplay(self, smartMode = False):
     self.selfInitInterfaces()
-    time.sleep(0.3)
+    time.sleep(0.1)
+    self.timer = time.time()
 
-    logging.debug("Bus : %s\n\n"%self.interfaces.bus)
-    logging.debug("Active bus : %s\n\n"%self.activeBus)
+    if self.live == True and self.session['mode'] < SESSION_MODE.LIVE:
+      self.appSignals.startSessionLive.emit(True)
 
     if smartMode == True:
       self.switchSmartButtons(visible=True)
+      self.switchAltButtons(visible=False)
       self.smartMode = True
       self.switchMainButtons(disabled=True)
       self.setProgressBar()
@@ -203,51 +244,137 @@ class ReplayDialog(ModelDialog):
     else:
       self.smartMode = False
       self.switchSmartButtons(visible=False)
+      self.switchAltButtons(visible=True)
       self.framesBuffer = self.frames.copy()
       self.bufferLen = len(self.framesBuffer)
       self.switchMainButtons(disabled=True)
       self.setProgressBar()
       self.displayBufferRange(0, len(self.framesBuffer))
+      if self.replayIsPaused == True:
+        self.replayIsPaused = False
+        # CMD - RESEND FRAMES 0
+
+      else:
+        self.replayCurrentFrame = 0
+
       self.replayBufferedFrames()
 
 
   def replayBufferedFrames(self):
-    currentFrame = 0
+    self.threads['replay'] = threading.Thread(target = self.threadReplayBufferedFrames)
+    self.threads['replay'].start()
+
+
+  def threadReplayBufferedFrames(self):
     self.threadStopManager['replay'].clear()
-    logging.debug("Valid bus : \n%s\n"%self.validBus)
+    replayDuration =  self.framesBuffer[len(self.framesBuffer)-1]['ts']
+    cumulatedSleep = 0
+    if self.replayCurrentFrame != 0 and len(self.initMsg) > 0:
+      for f in self.initMsg:
+        if f['preset'] in self.validBus:
+          busId = self.validBus[f['preset']]
+          self.activeBus[busId].sendMsg(f)
+
+    if self.startPause > 0 and self.replayCurrentFrame == 0:
+      time.sleep(self.startPause / 1000)
+
     while not self.threadStopManager['replay'].is_set():
-      if currentFrame < self.bufferLen:
-        f = self.framesBuffer[currentFrame]
+      if self.replayCurrentFrame < self.bufferLen:
+
+        f = self.framesBuffer[self.replayCurrentFrame]
 
         if f['preset'] in self.validBus:
           busId = self.validBus[f['preset']]
           self.activeBus[busId].sendMsg(f)
 
-        if currentFrame < self.bufferLen -1:
-          waitTime = self.framesBuffer[currentFrame + 1]['ts'] - f['ts']
-          if waitTime > 1:
-            waitTime = 1
-          time.sleep(waitTime)
+        if self.live == True:
+          f_ = f.copy()
+          f_['ts'] = time.time()
+          self.appSignals.frameRecv.emit({"msg":f_})
+          del f_
 
-      currentFrame += 1
+        if self.replayCurrentFrame < self.bufferLen -1:
+          waitTime = self.framesBuffer[self.replayCurrentFrame + 1]['ts'] - f['ts']
+          if waitTime > REPLAY.MAX_WAIT_TIME:
+            waitTime = REPLAY.MAX_WAIT_TIME
+          if waitTime >= 0.010 or cumulatedSleep > 0.010:
+            time.sleep(waitTime + cumulatedSleep) #INACCURATE - CUMULATE PER MS
+            cumulatedSleep = 0
+          else:
+            cumulatedSleep += waitTime
 
-      if currentFrame >= self.bufferLen:
+      self.replayCurrentFrame += 1
+
+      if self.replayCurrentFrame >= self.bufferLen:
         if self.loop == False:
           self.threadStopManager['replay'].set()
         else:
-          currentFrame = 0
-      self.body.progress.setValue(currentFrame)
-      QApplication.processEvents()
+          if self.endPause > 0:
+            time.sleep(self.endPause / 1000)
+          self.replayCurrentFrame = 0
 
-    if self.smartMode == False:
+      rTime = self.getRemainingTime(replayDuration-f['ts'])
+      replayInfo = "%s : %s - %s : %s:%s:%s"%(
+                      QCoreApplication.translate("REPLAY","CURRENT_FRAME"), self.replayCurrentFrame,
+                      QCoreApplication.translate("REPLAY","TIME_REMAINING"),rTime[0],rTime[1],rTime[2])
+
+      if self.replayCurrentFrame %50 == 0 or len(self.framesBuffer) < 1000 or self.replayCurrentFrame == len(self.framesBuffer):
+        self.appSignals.updateProgressBar.emit([self.replayCurrentFrame, replayInfo])
+
+    if self.smartMode == False and self.replayIsPaused == False:
       self.switchMainButtons(disabled=False)
       self.switchSmartButtons(visible=False)
+      self.switchAltButtons(visible=False)
+
+  def updateProgressBar(self, data):
+    self.body.progress.setValue(data[0])
+    self.body.lblFrameId.setText(data[1])
+
+  def getRemainingTime(self, timestamp):
+    seconds=str(int((timestamp)%60)).zfill(2)
+    minutes=str(int((timestamp/60)%60)).zfill(2)
+    hours=str(int(timestamp/(60*60))).zfill(2)
+    return hours, minutes, seconds
+
+  def replayGetBackward(self):
+    idx = self.replayCurrentFrame
+    newIdx = 0
+    ts = self.framesBuffer[self.replayCurrentFrame]['ts']
+    for i in range(0, idx):
+      if ts - self.framesBuffer[idx - i]['ts'] >= REPLAY.BACKTIME:
+        newIdx = idx - i
+        break
+    self.replayCurrentFrame = newIdx
+
+    if self.replayIsPaused == True:
+      self.pauseReplay()
+
+
+  def pauseReplay(self):
+    options = [{"color":"white","color_disabled":"black"}]
+    if self.replayIsPaused == False:
+      self.replayIsPaused = True
+      self.threadStopManager['replay'].set()
+      self.body.btnPause.setIcon(qta.icon("fa5s.play-circle",options=options))
+      self.body.btnPause.setProperty("cssClass","btn-success")
+      self.body.btnPause.setStyle(self.body.btnPause.style())
+      self.body.btnPause.setText(QCoreApplication.translate("REPLAY","PLAY"))
+    else:
+      self.initReplay(smartMode= False)
+      self.body.btnPause.setIcon(qta.icon("fa5s.pause-circle",options=options))
+      self.body.btnPause.setProperty("cssClass","btn-danger")
+      self.body.btnPause.setStyle(self.body.btnPause.style())
+      self.body.btnPause.setText(QCoreApplication.translate("REPLAY","PAUSE"))
+
 
   def cancelReplay(self):
     self.smartMode = False
+    self.replayIsPaused = False
     self.threadStopManager['replay'].set()
     self.switchMainButtons(disabled=False)
     self.switchSmartButtons(visible=False)
+    self.switchAltButtons(visible=False)
+
 
   def setProgressBar(self):
     self.body.progress.show()
@@ -255,12 +382,15 @@ class ReplayDialog(ModelDialog):
     self.body.lblFrameCount.show()
     self.body.progress.setValue(0)
     self.body.progress.setMaximum(len(self.framesBuffer ))
+    self.body.lblFrameId.show()
+    self.body.lblFrameId.setText("")
 
 
   def hideProgressBar(self):
     self.body.progress.hide()
     self.body.titlePlaying.hide()
     self.body.lblFrameCount.hide()
+    self.body.lblFrameId.hide()
 
 
   def displayBufferRange(self, start=0, stop=0):
@@ -303,19 +433,29 @@ class ReplayDialog(ModelDialog):
     self.body.btnUpdate.setVisible(visible)
     self.body.btnReplay.setVisible(visible)
     self.body.btnStop.setVisible(visible)
+    self.body.btnCancel.setVisible(visible)
 
+
+  def switchAltButtons(self, visible=True):
+    options = [{"color":"white","color_disabled":"black"}]
+    self.body.btnBack.setVisible(visible)
+    self.body.btnSliceAll.setVisible(visible)
+    self.body.btnPause.setVisible(visible)
+    self.body.btnCancelAll.setVisible(visible)
+    self.body.btnPause.setText(QCoreApplication.translate("REPLAY","PAUSE"))
+    self.body.btnPause.setIcon(qta.icon("fa5s.pause-circle",options=options))
+    self.body.btnPause.setProperty("cssClass","btn-danger")
+    self.body.btnPause.setStyle(self.body.btnPause.style())
 
 
   def switchMainButtons(self, disabled = True):
+    self.body.checkLoop.setDisabled(disabled)
+    self.body.checkLive.setDisabled(disabled)
+
     if disabled == True:
       cssClass="btn-disabled"
-      self.body.btnCancel.setVisible(True)
-
     else:
       cssClass="btn-primary"
-      self.body.btnCancel.setVisible(False)
-
-    self.body.checkLoop.setDisabled(disabled)
 
     widgets = [self.body.btnSmartReplay, self.body.btnReplayAll,self.body.btnUpdateSession, self.body.btnAddCommand]
     for w in widgets:
@@ -326,8 +466,10 @@ class ReplayDialog(ModelDialog):
     for elt in self.requiredBusWidgets:
       elt['widget'].setDisabled(disabled)
 
+
   def drawDialogBody(self):
     self.switchMainButtons(disabled=False)
+    self.switchAltButtons(visible=False)
     self.switchSmartButtons(visible=False)
     self.hideProgressBar()
 
@@ -344,6 +486,10 @@ class ReplayDialog(ModelDialog):
     self.body.btnUpdate.setIcon(qta.icon("mdi.playlist-edit",options=options))
     self.body.btnReplay.setIcon(qta.icon("mdi.replay",options=options))
     self.body.btnCancel.setIcon(qta.icon("mdi.cancel",options=options))
+    self.body.btnCancelAll.setIcon(qta.icon("mdi.cancel",options=options))
+    self.body.btnBack.setIcon(qta.icon("mdi.replay",options=options))
+    self.body.btnSliceAll.setIcon(qta.icon("fa5s.cut",options=options))
+    self.body.btnPause.setIcon(qta.icon("fa5s.pause-circle",options=options))
 
     self.body.lblFrames.setText(str(len(self.frames)))
     self.body.lblMode.setText(QCoreApplication.translate("REPLAY",REPLAY.LABEL[self.replayMode]))

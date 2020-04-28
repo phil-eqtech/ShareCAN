@@ -19,12 +19,17 @@ class CustomSignals(QObject):
   gatewayForward = pyqtSignal(dict)
 
   stopSessionRecording = pyqtSignal(bool)
+  startSessionLive = pyqtSignal(bool)
 
   signalEditorRefresh  = pyqtSignal(dict)
   signalReload = pyqtSignal(bool)
 
   # Frame model / msg Table
   flagId = pyqtSignal(list)
-  filterId = pyqtSignal(list)
+  filterHideId = pyqtSignal(list)
+  filterShowId = pyqtSignal(list)
   unFilterId = pyqtSignal(bool)
   replaySelection = pyqtSignal(list)
+  replayCommand = pyqtSignal(dict)
+
+  updateProgressBar = pyqtSignal(list)

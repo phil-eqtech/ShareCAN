@@ -136,7 +136,7 @@ class SignalDialog(ModelDialog):
     self.getMainVariables(refWindow)
 
     self.frameSrc = frameSrc
-    logging.debug(frameSrc)
+    logging.debug("SIGNAL : %s"%frameSrc)
     self.lastRefresh = 0
 
     self.signalStart = None

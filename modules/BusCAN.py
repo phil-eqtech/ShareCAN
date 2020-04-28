@@ -25,10 +25,7 @@ class BusCAN:
     self.threadStopManager = {}
     self.slcanProcess = None
     self.appSignals = signals
-    self.idDict = {}
     self.idValues = {}
-    self.msgBuffer = []
-    self.msgBufferTracker = {}
     self.session = session
 
     self.initBus()
@@ -60,6 +57,7 @@ class BusCAN:
     if self.session['mode'] >  SESSION_MODE.IDLE:
       self.startCapturing()
 
+
   def closeBus(self):
     # Closing threads first
     for daemon in self.threadStopManager:
@@ -74,12 +72,14 @@ class BusCAN:
       self.callShellCmdIp('down')
     self.bus['active'] = False
 
+
   def callShellCmdIp(self, status = 'up'):
     if self.bus['bus'] != "vcan0":
       args = ['sudo','/sbin/ip', 'link', 'set', status, self.bus['bus']]
       p = subprocess.Popen(args)
       p.communicate()
       return p.returncode
+
 
   def slcanGetSpeedCode(self):
     slcanSpeedCode=[10,20,50,100,125,250,500,800,1000]
@@ -88,6 +88,7 @@ class BusCAN:
       return "-s%d"%idx
     except:
       return None
+
 
   def setSlcanSpeed(self):
     speed = self.slcanGetSpeedCode()
@@ -101,6 +102,7 @@ class BusCAN:
     else:
       return False
 
+
   def setBuiltinSpeed(self):
     if self.bus['bus'] != "vcan0":
       args = ['sudo','/sbin/ip', 'link', 'set', 'down', self.bus['bus']]
@@ -112,8 +114,10 @@ class BusCAN:
       p.communicate()
       return p.returncode
 
+
   def closeSlcan(self):
     self.slcanProcess.sendcontrol("c")
+
 
   def startCapturing(self):
     if self.bus['mode'] == "slcan" or self.bus['mode'] == "builtincan":
@@ -124,6 +128,7 @@ class BusCAN:
       pass
     else:
       pass # return ERROR
+
 
   def stopCapturing(self):
     if self.bus['mode'] == "slcan" or self.bus['mode'] == "builtincan":
@@ -137,6 +142,7 @@ class BusCAN:
     if not name in self.wishes:
       wish = {"occurs": threading.Event(), "id": id, "validReply": validReply, "errorReply": errorReply, "strictReply": strictReply, "validId":validId}
       self.wishes[name] = wish
+
 
   def checkWishes(self, msg):
     self.canDelWishes.clear()
@@ -173,10 +179,12 @@ class BusCAN:
     self.canDelWishes.set()
     return False
 
+
   def validateWish(self, name, msg):
     self.wishes[name]["replyMsg"] = msg.data
     self.wishes[name]["replyId"] = msg.arbitration_id
     self.wishes[name]["occurs"].set()
+
 
   def delWish(self, name):
     self.canDelWishes.wait()
@@ -206,78 +214,18 @@ class BusCAN:
             timer = time.time()
             data = {}
             data['id'] = msg.arbitration_id
-            id = str(data['id'])
             data['extendedId'] = msg.is_extended_id
             data['len'] = msg.dlc
-            msgDetails = self.analyseMsgBytes(id, msg.data)
-            data['bytes'] = msgDetails[0]
             data['msg'] = msg.data
             data['type'] = "can"
-            data['hasChangedValue'] = msgDetails[1]
             data['ts'] = time.time()
             data['preset'] =  self.bus['preset']
             data['presetLabel'] =  self.bus['presetLabel']
-            data['count'] = self.idValues[id]['count']
             data['busName'] = self.bus['label']
-            data['busId'] = self.bus['id']
-            if data['hasChangedValue'] == True:
-              self.idValues[id]['lastChange'] = data['ts']
-            data['lastChange'] = self.idValues[id]['lastChange']
 
-            self.idValues[id]['lastValue'] = msg.data
             self.appSignals.frameRecv.emit({"msg":data})
       msg = self.canbus.recv(0.1)
 
-
-  def analyseMsgBytes(self, id, msg):
-    results = []
-    hasChangedValue = False
-    if not id in self.idValues:
-      self.idValues[id] = {"lastValue": [], "values": {}, "snapValues": {}, "lastChange":0,
-                            "count":0, "prevBytes":[], "lastChanges":[]}
-
-    self.idValues[id]['count'] += 1
-
-    prevValues = self.idValues[id]
-    if id == 0x188:
-      pass
-    for i in range(0, len(msg)):
-      byteDetails = {}
-      byteRef = str(i)
-      byteDetails['value'] = msg[i]
-      if len(prevValues["lastValue"]) >= i+1:
-        if prevValues["lastValue"][i] != msg[i]:
-          if not byteRef in prevValues['snapValues'] or not msg[i] in prevValues['snapValues'][byteRef]:
-            byteDetails['isChanged'] = True
-            byteDetails['lastChange'] = time.time()
-            byteDetails['prevByte'] = prevValues["lastValue"][i]
-            hasChangedValue = True
-          else:
-            byteDetails['isChanged'] = False
-            byteDetails['prevByte'] = prevValues["prevBytes"][i]
-            byteDetails['lastChange'] = prevValues["lastChanges"][i]
-        else:
-          byteDetails['isChanged'] = False
-          byteDetails['prevByte'] = prevValues["prevBytes"][i]
-          byteDetails['lastChange'] = prevValues["lastChanges"][i]
-      else:
-        byteDetails['isChanged'] = True
-        byteDetails['prevByte'] = None
-        byteDetails['lastChange'] = time.time()
-
-        self.idValues[id]['prevBytes'].append(None)
-        self.idValues[id]['lastChanges'].append(None)
-        hasChangedValue = True
-      self.idValues[id]['prevBytes'][i] = byteDetails['prevByte']
-      self.idValues[id]['lastChanges'][i] = byteDetails['lastChange']
-
-      if not byteRef in prevValues['values']:
-        self.idValues[id]['values'][byteRef] = []
-      if not msg[i] in self.idValues[id]['values'][byteRef]:
-        self.idValues[id]['values'][byteRef].append(msg[i])
-
-      results.append(byteDetails)
-    return [results, hasChangedValue]
 
   def sendMsg(self, msg, raw=False):
     # TO IMPROVE
@@ -291,6 +239,7 @@ class BusCAN:
         self.canbus.send(craftedMsg)
     except:
       logging.error(sys.exc_info()[0])
+
 
   def craftMsg(self, arbId, msg, extended_id = 0):
     """if self.padding != None:

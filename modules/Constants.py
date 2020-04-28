@@ -15,6 +15,8 @@ class REPLAY:
   FINISH = 1
   SUPPORTED_BUS_TYPE = ['can']
   LABEL = ["SESSION","SELECTION","COMMAND"]
+  BACKTIME = 3
+  MAX_WAIT_TIME = 5
 
 class SLICE:
   NEXT = 1
@@ -28,6 +30,11 @@ class SIGNALS:
 class DISPLAY:
   DURATION = {"1 sec":1, "5 sec":5, "30 sec":30, "1 min": 60}
 
+class CMD:
+  SRC = {"ANALYSIS":1, "ENGINE_CODE":2, "MODEL":3, "MANUFACTURER":4}
+  FUZZ_QTY_WARN = 60000
+  FUZZ_QTY_LIMIT = FUZZ_QTY_WARN*60
+
 LOG_LEVEL = logging.DEBUG
 
 CSS_FILE = "./static/ui.css"
@@ -37,6 +44,9 @@ WIRE_COLOR = ["BK","BN","BU","GN","GY","OG","RD","VT","WH","YE"]
 OBD_PORTS = []
 for i in range(0, 16):
   OBD_PORTS.append(i+1)
+
+ID_MAX_VALUE = 536870911
+BYTE_MAX_VALUE = 255
 
 PRIVACY_MODE = {"private":"PRIVATE","restricted":"RESTRICTED","public":"PUBLIC"}
 PRIVACY_ICON = {"private":"fa5s.user","restricted":"fa5s.user-friends","public":"mdi.earth"}
@@ -59,10 +69,11 @@ FRAME_RECORD_GROUP_LIMIT = 8000
 TABLE_REFRESH_RATE = 0.2
 FRAME_CHANGE_TIME = 1
 
-FRAME_WINDOW_MODEL = [{'label':'ID', 'field':'id', 'w':5},{'label':'BUS', 'field':'busName','w':5},
-                      {'label':'ECU', 'field':'ecu','w':5}, {'label':'DATA', 'field':'msg','w':180},
-                      {'label':'ASCII', 'field':'ascii','w':5}, {'label':'COUNT', 'field':'count','w':5},
-                      {'label':'TIME', 'field':'ts','w':5}, {'label':'SIGNAL', 'field':'signals'}]
+FRAME_WINDOW_MODEL = [{'label':'ID', 'field':'id', 'w':8},{'label':'BUS', 'field':'busName','w':20},
+                      {'label':'ECU', 'field':'ecu','w':10}, {'label':'DATA', 'field':'msg','w':170},
+                      {'label':'ASCII', 'field':'ascii','w':10}, {'label':'COUNT', 'field':'count','w':8},
+                      {'label':'PERIOD', 'field':'period','w':8}, {'label':'TIME', 'field':'ts','w':15},
+                      {'label':'SIGNAL', 'field':'signals'}]
 
 BIT_WINDOW_MODEL = [{'label':'BIT_8', 'field':'b8','w':5}, {'label':'BIT_7', 'field':'b7','w':5},
                     {'label':'BIT_6', 'field':'b6','w':5}, {'label':'BIT_5', 'field':'b5','w':5},

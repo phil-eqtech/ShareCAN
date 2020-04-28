@@ -1081,6 +1081,9 @@ margin-right:0.5em;</string>
               <iconset>
                <normaloff>static/icons16/application-terminal.png</normaloff>static/icons16/application-terminal.png</iconset>
              </property>
+             <property name="cssClass" stdset="0">
+              <string>btn-secondary</string>
+             </property>
             </widget>
            </item>
            <item>
@@ -1097,6 +1100,9 @@ margin-right:0.5em;</string>
              <property name="text">
               <string>LIN_BTN</string>
              </property>
+             <property name="cssClass" stdset="0">
+              <string>btn-disabled</string>
+             </property>
             </widget>
            </item>
            <item>
@@ -1112,6 +1118,9 @@ margin-right:0.5em;</string>
              </property>
              <property name="text">
               <string>KLN_BTN</string>
+             </property>
+             <property name="cssClass" stdset="0">
+              <string>btn-disabled</string>
              </property>
             </widget>
            </item>
@@ -1134,23 +1143,42 @@ margin-right:0.5em;</string>
               <cursorShape>PointingHandCursor</cursorShape>
              </property>
              <property name="toolTip">
-              <string>CMD_EDITOR_TOOLTIP</string>
+              <string/>
              </property>
              <property name="text">
               <string>CMD_EDITOR</string>
              </property>
              <property name="cssClass" stdset="0">
-              <string>btn-primary</string>
+              <string>btn-secondary</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnNotes">
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
+             <property name="text">
+              <string>NOTES</string>
+             </property>
+             <property name="cssClass" stdset="0">
+              <string>btn-secondary</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="btnShowRightMenu">
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
              <property name="toolTip">
-              <string>HIDE_MENU_TOOLTIP</string>
+              <string/>
              </property>
              <property name="text">
               <string>HIDE_MENU</string>
+             </property>
+             <property name="cssClass" stdset="0">
+              <string>btn-secondary</string>
              </property>
             </widget>
            </item>
@@ -1229,7 +1257,7 @@ margin-right:0.5em;</string>
                 <x>0</x>
                 <y>0</y>
                 <width>292</width>
-                <height>605</height>
+                <height>644</height>
                </rect>
               </property>
               <property name="sizePolicy">
@@ -1366,49 +1394,16 @@ border-radius:0;</string>
                     <property name="cssClass" stdset="0">
                      <string>cardBody</string>
                     </property>
-                    <layout class="QFormLayout" name="formDisplayLayout">
-                     <property name="verticalSpacing">
-                      <number>6</number>
-                     </property>
+                    <layout class="QVBoxLayout" name="verticalLayout_14">
                      <property name="topMargin">
                       <number>4</number>
                      </property>
                      <property name="bottomMargin">
                       <number>6</number>
                      </property>
-                     <item row="2" column="0">
-                      <widget class="QLabel" name="lblMaskStatic">
-                       <property name="text">
-                        <string>MASK_STATIC</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="1">
-                      <widget class="QCheckBox" name="checkMaskStatic">
-                       <property name="cursor">
-                        <cursorShape>PointingHandCursor</cursorShape>
-                       </property>
-                       <property name="layoutDirection">
-                        <enum>Qt::RightToLeft</enum>
-                       </property>
-                       <property name="text">
-                        <string/>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="3" column="0">
-                      <widget class="QLabel" name="lblKeepDuration">
-                       <property name="text">
-                        <string>KEEP_DURATION</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="3" column="1">
-                      <widget class="QWidget" name="keepDurationLayout" native="true">
-                       <layout class="QHBoxLayout" name="horizontalLayout_12">
-                        <property name="spacing">
-                         <number>0</number>
-                        </property>
+                     <item>
+                      <widget class="QWidget" name="alignWidget1" native="true">
+                       <layout class="QHBoxLayout" name="horizontalLayout_14">
                         <property name="leftMargin">
                          <number>0</number>
                         </property>
@@ -1422,17 +1417,49 @@ border-radius:0;</string>
                          <number>0</number>
                         </property>
                         <item>
-                         <spacer name="horizontalSpacer_8">
-                          <property name="orientation">
-                           <enum>Qt::Horizontal</enum>
+                         <widget class="QLabel" name="lblMaskStatic">
+                          <property name="text">
+                           <string>MASK_STATIC</string>
                           </property>
-                          <property name="sizeHint" stdset="0">
-                           <size>
-                            <width>1</width>
-                            <height>1</height>
-                           </size>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QCheckBox" name="checkMaskStatic">
+                          <property name="cursor">
+                           <cursorShape>PointingHandCursor</cursorShape>
                           </property>
-                         </spacer>
+                          <property name="layoutDirection">
+                           <enum>Qt::RightToLeft</enum>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QWidget" name="widget" native="true">
+                       <layout class="QHBoxLayout" name="horizontalLayout_18">
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QLabel" name="lblKeepDuration">
+                          <property name="text">
+                           <string>KEEP_DURATION</string>
+                          </property>
+                         </widget>
                         </item>
                         <item>
                          <widget class="QComboBox" name="comboKeepDuration">
@@ -1456,59 +1483,95 @@ border-radius:0;</string>
                        </layout>
                       </widget>
                      </item>
-                     <item row="5" column="1">
-                      <widget class="QPushButton" name="btnSnapClear">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="cursor">
-                        <cursorShape>PointingHandCursor</cursorShape>
-                       </property>
-                       <property name="toolTip">
-                        <string>CLEAR_SNAP_TOOLTIP</string>
-                       </property>
-                       <property name="text">
-                        <string>CLEAR_SNAP</string>
-                       </property>
-                       <property name="cssClass" stdset="0">
-                        <string>btn-primary</string>
-                       </property>
+                     <item>
+                      <widget class="QWidget" name="widget_2" native="true">
+                       <layout class="QHBoxLayout" name="horizontalLayout_19">
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QLabel" name="titleSignalSrc">
+                          <property name="text">
+                           <string>SIGNAL_SRC</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QComboBox" name="comboSignalsSrc"/>
+                        </item>
+                       </layout>
                       </widget>
                      </item>
-                     <item row="5" column="0">
-                      <widget class="QPushButton" name="btnSnap">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="cursor">
-                        <cursorShape>PointingHandCursor</cursorShape>
-                       </property>
-                       <property name="toolTip">
-                        <string>SNAP_ID_TOOLTIP</string>
-                       </property>
-                       <property name="text">
-                        <string>SNAP_ID</string>
-                       </property>
-                       <property name="cssClass" stdset="0">
-                        <string>btn-primary</string>
-                       </property>
+                     <item>
+                      <widget class="QWidget" name="widget_3" native="true">
+                       <layout class="QHBoxLayout" name="horizontalLayout_12">
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QPushButton" name="btnSnap">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="cursor">
+                           <cursorShape>PointingHandCursor</cursorShape>
+                          </property>
+                          <property name="toolTip">
+                           <string>SNAP_ID_TOOLTIP</string>
+                          </property>
+                          <property name="text">
+                           <string>SNAP_ID</string>
+                          </property>
+                          <property name="cssClass" stdset="0">
+                           <string>btn-primary</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QPushButton" name="btnSnapClear">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="cursor">
+                           <cursorShape>PointingHandCursor</cursorShape>
+                          </property>
+                          <property name="toolTip">
+                           <string>CLEAR_SNAP_TOOLTIP</string>
+                          </property>
+                          <property name="text">
+                           <string>CLEAR_SNAP</string>
+                          </property>
+                          <property name="cssClass" stdset="0">
+                           <string>btn-primary</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
                       </widget>
-                     </item>
-                     <item row="4" column="0">
-                      <widget class="QLabel" name="titleSignalsSrc">
-                       <property name="text">
-                        <string>SIGNALS_SRC</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="4" column="1">
-                      <widget class="QComboBox" name="comboSignalsSrc"/>
                      </item>
                     </layout>
                    </widget>
@@ -1999,19 +2062,6 @@ border-radius:0;</string>
           </layout>
          </widget>
         </item>
-        <item>
-         <widget class="QWidget" name="chatMenu" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_16">
-           <item>
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>BOTTOM WIDGET  : Show active functions and unread chat messages</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
        </layout>
       </widget>
      </widget>
@@ -2027,50 +2077,45 @@ border-radius:0;</string>
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>btnBusKln</tabstop>
-  <tabstop>btnAnalysis</tabstop>
-  <tabstop>btnDevices</tabstop>
-  <tabstop>btnServer</tabstop>
-  <tabstop>btnNotification</tabstop>
-  <tabstop>btnConfig</tabstop>
-  <tabstop>btnProfile</tabstop>
   <tabstop>loginLogo</tabstop>
   <tabstop>fldUsername</tabstop>
   <tabstop>fldProfileName</tabstop>
   <tabstop>fldPassword</tabstop>
   <tabstop>fldConfirmPassword</tabstop>
   <tabstop>btnLogin</tabstop>
-  <tabstop>btnLoadAnalysis</tabstop>
+  <tabstop>btnMainMenu</tabstop>
+  <tabstop>btnAnalysis</tabstop>
+  <tabstop>btnDevices</tabstop>
+  <tabstop>btnServer</tabstop>
+  <tabstop>btnNotification</tabstop>
+  <tabstop>btnConfig</tabstop>
+  <tabstop>btnProfile</tabstop>
   <tabstop>btnNewAnalysis</tabstop>
+  <tabstop>btnLoadAnalysis</tabstop>
+  <tabstop>pushButton_4</tabstop>
   <tabstop>pushButton_3</tabstop>
-  <tabstop>srv</tabstop>
   <tabstop>btnEditVehicle</tabstop>
   <tabstop>btnBusCan</tabstop>
   <tabstop>btnBusLin</tabstop>
-  <tabstop>btnMainMenu</tabstop>
-  <tabstop>stat</tabstop>
+  <tabstop>btnBusKln</tabstop>
   <tabstop>btnCmdEditor</tabstop>
   <tabstop>btnShowRightMenu</tabstop>
-  <tabstop>msgTable</tabstop>
-  <tabstop>rightMenu</tabstop>
   <tabstop>btnCollapseDisplay</tabstop>
-  <tabstop>checkMaskStatic</tabstop>
-  <tabstop>comboKeepDuration</tabstop>
-  <tabstop>btnSnapClear</tabstop>
-  <tabstop>btnSnap</tabstop>
   <tabstop>btnCollapseSession</tabstop>
-  <tabstop>btnSessionLoad</tabstop>
-  <tabstop>btnSessionRec</tabstop>
   <tabstop>btnSessionLive</tabstop>
-  <tabstop>btnSessionSave</tabstop>
+  <tabstop>btnSessionRec</tabstop>
   <tabstop>btnSessionPause</tabstop>
   <tabstop>btnSessionReplay</tabstop>
   <tabstop>btnSessionForensic</tabstop>
   <tabstop>btnSessionNew</tabstop>
+  <tabstop>btnSessionSave</tabstop>
+  <tabstop>btnSessionLoad</tabstop>
   <tabstop>btnCollapseFilter</tabstop>
   <tabstop>idFilter</tabstop>
-  <tabstop>comboSignalsSrc</tabstop>
-  <tabstop>pushButton_4</tabstop>
+  <tabstop>msgTable</tabstop>
+  <tabstop>rightMenu</tabstop>
+  <tabstop>stat</tabstop>
+  <tabstop>srv</tabstop>
  </tabstops>
  <resources/>
  <connections/>

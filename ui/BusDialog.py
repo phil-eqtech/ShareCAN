@@ -657,8 +657,12 @@ class BusDialog(ModelDialog):
                           "comment":variant['bus'][0]['comment'], "init":variant['bus'][0]['init'],
                           "version":variant['bus'][0]['version'],"hash":bus['hash'], "wire":variant['bus'][0]['wire']})
     # ADD GENERIC ?
+    parsedBus = []
     for preset in presets:
-      self.body.fldPreset.addItem(self.parsePresetLabel(preset), preset)
+      label = self.parsePresetLabel(preset)
+      if not label in parsedBus:
+        self.body.fldPreset.addItem(label, preset)
+        parsedBus.append(label)
 
     self.presetLock = False
 
@@ -671,7 +675,6 @@ class BusDialog(ModelDialog):
       label += self.parseWireInfo(bus['wire'])
       label += ")"
     return label
-
 
   def parseWireInfo(self, wire, splitter=" - "):
     label = ""
