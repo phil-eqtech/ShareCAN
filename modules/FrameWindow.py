@@ -177,9 +177,9 @@ class framesTableModel(QAbstractTableModel):
         elif role == Qt.DisplayRole:
           if self.columnLabel[c]['field'] == 'id': # ID
             if f['extendedId']==True:
-              return "{0:#0{1}x}".format(f['id'],10)
+              return "{0:0{1}x}".format(f['id'],8)
             else:
-              return "{0:#0{1}x}".format(f['id'],5)
+              return "{0:0{1}x}".format(f['id'],3)
           elif self.columnLabel[c]['field'] == 'msg':
             return f['msgColored']
           elif self.columnLabel[c]['field'] == 'ts':

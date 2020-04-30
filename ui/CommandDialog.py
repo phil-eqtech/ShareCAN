@@ -11,6 +11,7 @@ import uuid
 import re
 import sys
 import threading
+import math
 
 from ui.ModelDialog import ModelDialog, UCValidator
 from ui.CommandsForm import Ui_COMMAND
@@ -408,7 +409,7 @@ class CommandDialog(ModelDialog):
     fuzzId = 0
     fuzzBytes = 0
 
-    listWidgets = [self.body.activeMsg, self.body.constantMsg]
+    listWidgets = [self.body.constantMsg,self.body.activeMsg]
     for listWiget in listWidgets:
       for r in range(0, listWiget.count()):
         item = listWiget.item(r)
@@ -466,6 +467,7 @@ class CommandDialog(ModelDialog):
     elif re.search(self.regexpFormula, cmd['id']): # Check arithmetic
         try:
           cmd_ = self.formatFormula(cmd['id'])
+          logging.debug("EVAL %s"%cmd_)
           x = eval(cmd_)
         except:
           return self.showCmdError("INVALID_FORMULA", cmd['id'])
@@ -489,7 +491,9 @@ class CommandDialog(ModelDialog):
             return self.showCmdError("INVALID_BYTE_FUZZING", cmd['bytes'][i])
         elif re.search(self.regexpFormula, cmd['bytes'][i]):
           try:
+            logging.debug("B")
             cmd_ = self.formatFormula(cmd['bytes'][i])
+            logging.debug("EVAL %s"%cmd_)
             x = eval(cmd_)
           except:
             return self.showCmdError("INVALID_FORMULA", cmd['bytes'][i])
@@ -505,11 +509,11 @@ class CommandDialog(ModelDialog):
 
 
   def formatFormula(self, cmd):
-    formula = cmd.lower().replace("$","self.")
+    formula = cmd.lower().replace("$","self.b")
     formula = formula.replace(" ","")
     formula = re.split(self.regexpOperands, formula)
     for i in range(0,len(formula)):
-      if len(formula[i])> 0 and not re.search(self.regexNonBytes, formula[i]):
+      if len(formula[i])> 0 and not re.search(self.regexpNonBytes, formula[i]):
         formula[i] = str(int(formula[i],16))
     return "".join(formula)
 
@@ -567,6 +571,7 @@ class CommandDialog(ModelDialog):
       self.fuzzBytes[0]['min'] = int(ids[0],16)
       self.fuzzBytes[0]['max'] = int(ids[1], 16)
       craftedFrameSrc['id'] = "self.bi"
+      craftedFrameSrc['isFuzzed'] = True
     elif re.search(self.regexpFormula, cmd['id']):
       craftedFrameSrc['id'] = self.formatFormula(cmd['id'])
     else:
@@ -579,6 +584,7 @@ class CommandDialog(ModelDialog):
         self.fuzzBytes[i+1]['min'] = int(bytes[0],16)
         self.fuzzBytes[i+1]['max'] = int(bytes[1],16)
         craftedFrameSrc['bytes'].append("self.b%s"%(i+1))
+        craftedFrameSrc['isFuzzed'] = True
       elif re.search(self.regexpFormula, cmd['bytes'][i]):
         craftedFrameSrc['bytes'].append(self.formatFormula(cmd['bytes'][i]))
       else:
@@ -632,10 +638,10 @@ class CommandDialog(ModelDialog):
     bytesToFuzz = len(fuzzValues)
     repeat = self.body.fldRepeat.text()
     if len(repeat) == 0:
-      repeat = 0
+      repeat = 1
     else:
       repeat = int(repeat)
-      fuzzQty *= repeat+1
+      fuzzQty *= repeat
 
     fuzzQty *= len(self.frameSrc)
     if fuzzQty >= CMD.FUZZ_QTY_LIMIT:
@@ -684,14 +690,15 @@ class CommandDialog(ModelDialog):
     self.threadStopManager['generateCmd'].clear()
 
     while not self.threadStopManager['generateCmd'].is_set():
-      for rpt in range(-1, repeat):
+      for rpt in range(0, repeat):
         sequenceEnded = False
         isEndPause = False
+        ts_ = 0
         while sequenceEnded == False:
-
-          for i in range(0, len(self.frameSrc)):
+          for y in range(0,len(self.frameSrc)):
+            i = len(self.frameSrc) - y -1
             if ((self.frameSrc[i]['cmdType'] == 'activ' and isEndPause == False and
-                  (maxTs < 1 or (self.frameSrc[i]['ts'] != 0 and ts > 0 and ts%self.frameSrc[i]['ts']==0)) ) or
+                  self.frameSrc[i]['ts'] == ts_) or
                 (self.frameSrc[i]['cmdType'] == 'const') and
                   ((ts == 0 and self.frameSrc[i]['ts'] == 0) or (self.frameSrc[i]['ts'] != 0 and ts != 0 and ts%self.frameSrc[i]['ts'] == 0))):
               try:
@@ -706,20 +713,20 @@ class CommandDialog(ModelDialog):
                   data['extendedId'] = False
                 data['len'] = self.frameSrc[i]['len']
                 bytes = []
-                bytesStr = []
                 for y in range(0, len(self.frameSrc[i]['bytes'])):
                   if type(self.frameSrc[i]['bytes'][y]) == int:
                     b = self.frameSrc[i]['bytes'][y]
                   else:
                     b = eval(self.frameSrc[i]['bytes'][y])
                   bytes.append(b)
-                  bytesStr.append(str(b))
                 data['msg'] = bytes
                 data['type'] = self.frameSrc[i]['hash']['type']
                 data['ts'] = ts / 1000
                 data['preset'] =  self.frameSrc[i]['hash']['hash']
                 data['presetLabel'] =  "%s - %s %s"%(self.frameSrc[i]['hash']['name'],self.frameSrc[i]['hash']['speed'],SUPPORTED_SPEED_UNIT[self.frameSrc[i]['hash']['type']])
                 data['busName'] =  self.frameSrc[i]['hash']['name']
+                if 'isFuzzed' in self.frameSrc[i]:
+                  data['isFuzzed'] = True
                 frames.append(data)
 
                 if self.frameSrc[i]['cmdType'] == 'const' and self.frameSrc[i]['ts'] == 0:
@@ -731,16 +738,17 @@ class CommandDialog(ModelDialog):
                   QApplication.processEvents()
               except:
                 logging.warn("ERROR COMPUTING FRAMES %s"%sys.exc_info()[0])
-          if (maxTs < 1 or (ts > 0 and ts%(maxTs)  == 0)) and self.endPause == 0:
+          if (maxTs < 1 or ts_ == maxTs) and self.endPause == 0:
             sequenceEnded = True
             isEndPause = False
-          elif self.endPause > 0 and (ts > 0 and ts%(round(maxTs) + self.endPause)  == 0):
+          elif self.endPause > 0 and (ts > 0 and ts_ == maxTs + self.endPause -1):
             sequenceEnded = True
             isEndPause = False
           else:
-            if self.endPause > 0 and (maxTs < 1 or (ts > 0 and ts%(maxTs)  == 0)):
+            if self.endPause > 0 and (maxTs < 1 or (ts_ == maxTs)):
               isEndPause = True
           ts += 1
+          ts_ += 1
 
       if bytesToFuzz == 0:
         self.threadStopManager['generateCmd'].set()
@@ -759,8 +767,11 @@ class CommandDialog(ModelDialog):
             break
     if progress != None:
       progress.setLabelText(QCoreApplication.translate("COMMAND","LOADING_REPLAY_MODULE"))
-
-    self.appSignals.replayCommand.emit({"frames":frames,"initMsg":self.initMsg,"startPause":self.startPause,"endPause":self.endPause})
+    if bytesToFuzz > 0:
+      hasFuzzing = True
+    else:
+      hasFuzzing = False
+    self.appSignals.replayCommand.emit({"frames":frames,"initMsg":self.initMsg,"startPause":self.startPause,"endPause":self.endPause, "hasFuzzing":hasFuzzing})
 
     if progress != None:
         progress.close()

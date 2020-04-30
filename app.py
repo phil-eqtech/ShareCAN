@@ -95,7 +95,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.appSignals.filterShowId.connect(lambda eventList : self.filterShowId(eventList))
     self.appSignals.unFilterId.connect(lambda eventBool : self.unFilterId())
     self.appSignals.replaySelection.connect(lambda eventList: self.openReplayDialog(REPLAY.SELECTION, eventList))
-    self.appSignals.replayCommand.connect(lambda eventDict: self.openReplayDialog(REPLAY.COMMAND, eventDict['frames'], eventDict['initMsg'], eventDict['startPause'], eventDict['endPause']))
+    self.appSignals.replayCommand.connect(lambda eventDict: self.openReplayDialog(REPLAY.COMMAND, eventDict['frames'], eventDict['initMsg'], eventDict['startPause'], eventDict['endPause'], eventDict['hasFuzzing']))
 
     # Login - BTN signals
     # If no user is set, the user is prompted for his desired login/pwd
@@ -1149,7 +1149,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
   # Message replay
-  def openReplayDialog(self, mode=REPLAY.SESSION, cells=None, initMsg = [], startPause=0, endPause=0):
+  def openReplayDialog(self, mode=REPLAY.SESSION, cells=None, initMsg = [], startPause=0, endPause=0, hasFuzzing=False):
     if 'replay' in self.activeWindows:
       return False
 
@@ -1170,7 +1170,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     elif mode == REPLAY.COMMAND:
       frames = cells
 
-    self.activeWindows['replay'] = ReplayDialog(self, mode, frames, initMsg, startPause, endPause)
+    self.activeWindows['replay'] = ReplayDialog(self, mode, frames, initMsg, startPause, endPause, hasFuzzing)
     self.activeWindows['replay'].setWindowFlags(Qt.Dialog)
     self.setDialogSize(self.activeWindows['replay'], 640, 320)
     self.activeWindows['replay'].setStyleSheet(self.cssContent)

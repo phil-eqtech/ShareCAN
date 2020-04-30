@@ -109,19 +109,6 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="3">
-       <widget class="QCheckBox" name="checkLive">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>false</bool>
-        </property>
-        <property name="tristate">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="2">
        <widget class="QLabel" name="titleId">
         <property name="text">
@@ -148,6 +135,30 @@
         <property name="text">
          <string/>
         </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QComboBox" name="comboLive">
+        <item>
+         <property name="text">
+          <string>NONE</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>LIVE_REPLAY</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>RECORD_REPLAY</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>NEW_SESSION_RECORD</string>
+         </property>
+        </item>
        </widget>
       </item>
      </layout>

@@ -16,6 +16,7 @@ pip3 install uuid
 pip3 install qtawesome
 pip3 install python-can
 pip3 install bitstring
+pip3 install websockets
 
 
 mongo ShareCAN --eval 'db.devices.remove({"name":"Pican Duo"})'

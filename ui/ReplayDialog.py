@@ -18,7 +18,7 @@ class ReplayUi(QWidget, Ui_REPLAY):
 
 
 class ReplayDialog(ModelDialog):
-  def __init__(self, refWindow, mode=REPLAY.SESSION, frames=None, initMsg=[], startPause=0, endPause=0):
+  def __init__(self, refWindow, mode=REPLAY.SESSION, frames=None, initMsg=[], startPause=0, endPause=0, hasFuzzing=False):
     super().__init__()
 
     self.getMainVariables(refWindow)
@@ -45,6 +45,7 @@ class ReplayDialog(ModelDialog):
     self.initMsg = initMsg
     self.startPause = startPause
     self.endPause = endPause
+    self.hasFuzzing = hasFuzzing
 
     # Replay variables
     self.framesBuffer = []
@@ -107,7 +108,7 @@ class ReplayDialog(ModelDialog):
     self.body.btnSliceAll.clicked.connect(lambda: self.sliceFrames(startAtCurrentIndex=True))
     #self.body.btnAddCommand.clicked.connect(lambda: self.createCommand())
     self.body.checkLoop.toggled.connect(lambda x:self.updateLoop(x))
-    self.body.checkLive.toggled.connect(lambda x:self.updateLive(x))
+    #self.body.checkLive.toggled.connect(lambda x:self.updateLive(x))
 
     # Editing grid
     self.drawDialogBody()
@@ -231,6 +232,10 @@ class ReplayDialog(ModelDialog):
     time.sleep(0.1)
     self.timer = time.time()
 
+    if self.hasFuzzing == True:
+      self.fuzzId = None
+      self.fuzzMsg = None
+
     if self.live == True and self.session['mode'] < SESSION_MODE.LIVE:
       self.appSignals.startSessionLive.emit(True)
 
@@ -286,6 +291,20 @@ class ReplayDialog(ModelDialog):
         if f['preset'] in self.validBus:
           busId = self.validBus[f['preset']]
           self.activeBus[busId].sendMsg(f)
+
+        if 'isFuzzed' in f:
+          if f['id'] != self.fuzzId:
+            self.fuzzId = f['id']
+            if f['extendedId'] == True:
+              self.body.lblId.setText("{0:0{1}x}".format(f['id'],8))
+            else:
+              self.body.lblId.setText("{0:0{1}x}".format(f['id'],3))
+          if f['msg'] != self.fuzzMsg:
+            self.fuzzMsg = f['msg'].copy()
+            str = ""
+            for byte in f['msg']:
+              str += "{0:0{1}x}".format(byte,2) + " "
+            self.body.lblMsg.setText(str)
 
         if self.live == True:
           f_ = f.copy()
@@ -450,7 +469,7 @@ class ReplayDialog(ModelDialog):
 
   def switchMainButtons(self, disabled = True):
     self.body.checkLoop.setDisabled(disabled)
-    self.body.checkLive.setDisabled(disabled)
+    #self.body.comboLive.setDisabled(disabled)
 
     if disabled == True:
       cssClass="btn-disabled"
@@ -495,6 +514,16 @@ class ReplayDialog(ModelDialog):
     self.body.lblMode.setText(QCoreApplication.translate("REPLAY",REPLAY.LABEL[self.replayMode]))
 
     self.busListOrder = sorted(self.interfaces.bus, key=lambda x: (self.interfaces.bus[x]['deviceLabel'], self.interfaces.bus[x]['name']))
+
+    if self.hasFuzzing == True:
+      display = True
+    else:
+      display = False
+
+    self.body.titleId.setVisible(display)
+    self.body.titleMsg.setVisible(display)
+    self.body.lblId.setVisible(display)
+    self.body.lblMsg.setVisible(display)
 
     for key in self.requiredBusOrder:
       self.addRequiredBus(key)
