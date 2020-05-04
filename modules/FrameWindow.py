@@ -45,9 +45,14 @@ class TableView(QTableView):
     flagAction = QAction(QCoreApplication.translate("MENU","SET_FLAG"), self)
     flagAction.setIcon(qta.icon('mdi.flag'))
     flagAction.triggered.connect(lambda: self.appSignals.flagId.emit(cells))
+
     unFlagAction = QAction(QCoreApplication.translate("MENU","RESET_FLAGS"), self)
     unFlagAction.setIcon(qta.icon('mdi.flag-remove-outline'))
     unFlagAction.triggered.connect(lambda: self.appSignals.flagId.emit([]))
+
+    copyCellsAction = QAction(QCoreApplication.translate("MENU","COPY"), self)
+    copyCellsAction.setIcon(qta.icon('fa5.copy'))
+    copyCellsAction.triggered.connect(lambda: self.appSignals.copyCells.emit(True))
 
     self.menu.addAction(filterHideAction)
     self.menu.addAction(filterShowAction)
@@ -57,6 +62,8 @@ class TableView(QTableView):
     self.menu.addSeparator()
     self.menu.addAction(flagAction)
     self.menu.addAction(unFlagAction)
+    self.menu.addSeparator()
+    self.menu.addAction(copyCellsAction)
     # add other required actions
     self.menu.popup(QCursor.pos())
 

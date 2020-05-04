@@ -55,8 +55,9 @@ class ReplayDialog(ModelDialog):
     self.replayLock = threading.Event()
 
     self.loop = False
-    self.live = False
     self.timer = None
+    self.feedback = REPLAY.FEEDBACK_NONE
+
 
     self.replayCurrentFrame = 0
     self.replayIsPaused = False
@@ -108,7 +109,7 @@ class ReplayDialog(ModelDialog):
     self.body.btnSliceAll.clicked.connect(lambda: self.sliceFrames(startAtCurrentIndex=True))
     #self.body.btnAddCommand.clicked.connect(lambda: self.createCommand())
     self.body.checkLoop.toggled.connect(lambda x:self.updateLoop(x))
-    #self.body.checkLive.toggled.connect(lambda x:self.updateLive(x))
+    self.body.comboFeedback.currentIndexChanged.connect(lambda x:self.updateFeedback(x))
 
     # Editing grid
     self.drawDialogBody()
@@ -145,8 +146,8 @@ class ReplayDialog(ModelDialog):
           self.appSignals.switchBus.emit({"id":iface['id'], "dialog":None})
 
 
-  def updateLoop(self, value):
-    self.loop = value
+  def updateFeedback(self, index):
+    self.feedback = index
 
   def updateLive(self, value):
     self.live = value
@@ -236,8 +237,15 @@ class ReplayDialog(ModelDialog):
       self.fuzzId = None
       self.fuzzMsg = None
 
-    if self.live == True and self.session['mode'] < SESSION_MODE.LIVE:
+    if self.feedback == REPLAY.FEEDBACK_LIVE:
       self.appSignals.startSessionLive.emit(True)
+    elif self.feedback == REPLAY.FEEDBACK_RECORD:
+      self.appSignals.startSessionRecording.emit(False)
+    elif self.feedback == REPLAY.FEEDBACK_RECORD_NEW_SESSION:
+      if self.replayCurrentFrame == 0:
+        self.appSignals.startSessionRecording.emit(True)
+      else:
+        self.appSignals.startSessionRecording.emit(False)
 
     if smartMode == True:
       self.switchSmartButtons(visible=True)
@@ -257,8 +265,6 @@ class ReplayDialog(ModelDialog):
       self.displayBufferRange(0, len(self.framesBuffer))
       if self.replayIsPaused == True:
         self.replayIsPaused = False
-        # CMD - RESEND FRAMES 0
-
       else:
         self.replayCurrentFrame = 0
 
@@ -274,6 +280,7 @@ class ReplayDialog(ModelDialog):
     self.threadStopManager['replay'].clear()
     replayDuration =  self.framesBuffer[len(self.framesBuffer)-1]['ts']
     cumulatedSleep = 0
+
     if self.replayCurrentFrame != 0 and len(self.initMsg) > 0:
       for f in self.initMsg:
         if f['preset'] in self.validBus:
@@ -306,7 +313,7 @@ class ReplayDialog(ModelDialog):
               str += "{0:0{1}x}".format(byte,2) + " "
             self.body.lblMsg.setText(str)
 
-        if self.live == True:
+        if self.feedback > REPLAY.FEEDBACK_NONE:
           f_ = f.copy()
           f_['ts'] = time.time()
           self.appSignals.frameRecv.emit({"msg":f_})
@@ -340,10 +347,16 @@ class ReplayDialog(ModelDialog):
       if self.replayCurrentFrame %50 == 0 or len(self.framesBuffer) < 1000 or self.replayCurrentFrame == len(self.framesBuffer):
         self.appSignals.updateProgressBar.emit([self.replayCurrentFrame, replayInfo])
 
+    if self.feedback >= REPLAY.FEEDBACK_RECORD:
+      self.appSignals.startSessionForensic.emit(True)
+    elif self.feedback == REPLAY.FEEDBACK_LIVE:
+      self.appSignals.pauseSession.emit(True)
+
     if self.smartMode == False and self.replayIsPaused == False:
       self.switchMainButtons(disabled=False)
       self.switchSmartButtons(visible=False)
       self.switchAltButtons(visible=False)
+
 
   def updateProgressBar(self, data):
     self.body.progress.setValue(data[0])
@@ -378,6 +391,8 @@ class ReplayDialog(ModelDialog):
       self.body.btnPause.setProperty("cssClass","btn-success")
       self.body.btnPause.setStyle(self.body.btnPause.style())
       self.body.btnPause.setText(QCoreApplication.translate("REPLAY","PLAY"))
+      if self.feedback == REPLAY.FEEDBACK_LIVE:
+        self.appSignals.pauseSession.emit(True)
     else:
       self.initReplay(smartMode= False)
       self.body.btnPause.setIcon(qta.icon("fa5s.pause-circle",options=options))
@@ -524,6 +539,8 @@ class ReplayDialog(ModelDialog):
     self.body.titleMsg.setVisible(display)
     self.body.lblId.setVisible(display)
     self.body.lblMsg.setVisible(display)
+    self.body.titleFeedback.setVisible(display)
+    self.body.comboFeedback.setVisible(display)
 
     for key in self.requiredBusOrder:
       self.addRequiredBus(key)

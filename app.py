@@ -17,6 +17,7 @@ import sys
 import subprocess
 import atexit
 import logging
+import re
 
 from modules.Constants import *
 from modules.FrameWindow import *
@@ -86,8 +87,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.appSignals.startAnalysis.connect(lambda: self.openAnalysisWindow())
 
     self.appSignals.switchBus.connect(lambda eventDict:self.switchBus(eventDict['id'], eventDict['dialog']))
-    self.appSignals.stopSessionRecording.connect(self.stopSessionRecording)
+
     self.appSignals.startSessionLive.connect(lambda eventBool: self.sessionLive())
+    self.appSignals.startSessionRecording.connect(lambda eventBool: self.sessionRecord(eventBool))
+    self.appSignals.setNewSession.connect(lambda evenBool: self.sessionNew(noPrompt=True))
+    self.appSignals.pauseSession.connect(lambda eventBool: self.sessionPause())
+    self.appSignals.startSessionForensic.connect(lambda eventBool: self.sessionForensic())
     self.appSignals.frameRecv.connect(lambda eventDict: self.appendNewBusMsg(eventDict['msg']))
     self.appSignals.gatewayForward.connect(lambda eventDict: self.forwardBusMsg(eventDict['dst'], eventDict['msg']))
     self.appSignals.signalReload.connect(lambda eventBool: self.loadSignals())
@@ -96,6 +101,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.appSignals.unFilterId.connect(lambda eventBool : self.unFilterId())
     self.appSignals.replaySelection.connect(lambda eventList: self.openReplayDialog(REPLAY.SELECTION, eventList))
     self.appSignals.replayCommand.connect(lambda eventDict: self.openReplayDialog(REPLAY.COMMAND, eventDict['frames'], eventDict['initMsg'], eventDict['startPause'], eventDict['endPause'], eventDict['hasFuzzing']))
+    self.appSignals.copyCells.connect(lambda: self.copyCells())
 
     # Login - BTN signals
     # If no user is set, the user is prompted for his desired login/pwd
@@ -656,17 +662,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     btnWidget.setProperty("cssClass","btn-success")
     btnWidget.setStyle(btnWidget.style())
 
-  def sessionNew(self):
-    msgBox = QMessageBox()
-    msgBox.setText(QCoreApplication.translate("SESSION","SESSION_SET_NEW"))
-    msgBox.setWindowTitle(QCoreApplication.translate("SESSION","SESSION_SET_NEW"))
-    msgBox.setInformativeText(QCoreApplication.translate("SESSION","SESSION_SET_NEW_DETAILS"))
-    msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-    msgBox.setDefaultButton(QMessageBox.Ok)
-    self.centerMsg(msgBox)
-    choice = msgBox.exec()
+  def sessionNew(self, noPrompt=False):
+    if noPrompt == False:
+      msgBox = QMessageBox()
+      msgBox.setText(QCoreApplication.translate("SESSION","SESSION_SET_NEW"))
+      msgBox.setWindowTitle(QCoreApplication.translate("SESSION","SESSION_SET_NEW"))
+      msgBox.setInformativeText(QCoreApplication.translate("SESSION","SESSION_SET_NEW_DETAILS"))
+      msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+      msgBox.setDefaultButton(QMessageBox.Ok)
+      self.centerMsg(msgBox)
+      choice = msgBox.exec()
 
-    if choice == QMessageBox.Ok:
+    if noPrompt == True or choice == QMessageBox.Ok:
       isOnPause = False
       if self.session["mode"] == SESSION_MODE.IDLE:
         isOnPause = True
@@ -753,7 +760,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       self.appendNewBusMsg(msg)
     self.frameModel.sort(self.frameModel.sortCol, self.frameModel.sortOrder)
 
-  def sessionRecord(self):
+  def sessionRecord(self, newSession = False):
+    if newSession == True:
+      self.sessionNew(True)
+      time.sleep(0.05)
     if self.session["mode"] == SESSION_MODE.FORENSIC:
       self.frameModel.clearElt()
     self.sessionSetActiveBtn(self.btnSessionRec)
@@ -1251,16 +1261,38 @@ class MainWindow(QMainWindow, Ui_MainWindow):
   # Clean Ctrl+C / Ctrl+X commands to clean HTML tags
   def keyPressEvent(self, event):
     if event.matches(QKeySequence.Copy) or event.matches(QKeySequence.Cut):
-      if self.msgTable.hasFocus():
-        s = self.msgTable.selectionModel().selection().indexes()
-        indexes = self.msgTable.selectionModel().selection().indexes()
-        for index in sorted(indexes):
-          print('Cell %d/%s is selected' % (index.row(), index.column()))
-        #print(s.column())
-
-      #QApplication.clipboard().setText("YO")
-      #event.accept()
+      if self.copyCells() == True:
+        event.accept()
     event.ignore()
+
+  def copyCells(self):
+    if self.msgTable.hasFocus():
+      s = self.msgTable.selectionModel().selection().indexes()
+      indexes = self.msgTable.selectionModel().selection().indexes()
+      clipboardText = ""
+      currentRow = -1
+      currentColumn = -1
+      clipboardHeader = ""
+      for index in sorted(indexes):
+        if currentColumn < index.column():
+          currentColumn = index.column()
+          clipboardHeader += "%s;"%QCoreApplication.translate("MainWindow",FRAME_WINDOW_MODEL[index.column()]['label'])
+        if currentRow != index.row():
+          if currentRow > -1:
+            clipboardText += "\n"
+          currentRow = index.row()
+        cellText = self.msgTable.model().index(index.row(), index.column()).data()
+        clipboardText += "%s;"%self.cleanHTMLTags(cellText).strip()
+
+      QApplication.clipboard().setText("%s\n%s"%(clipboardHeader,clipboardText))
+      return True
+    return False
+
+  def cleanHTMLTags(self, srcTxt):
+    cleanRegexp = re.compile('<.*?>')
+    rawText = re.sub(cleanRegexp, '', srcTxt)
+    return rawText
+
   # -- Copy/Cut hack
 
 
