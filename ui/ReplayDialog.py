@@ -51,6 +51,7 @@ class ReplayDialog(ModelDialog):
     self.framesBuffer = []
 
     self.progressIndex = 0
+    self.progressLastUpdate = 0
     self.threadStopManager['replay'] = threading.Event()
     self.replayLock = threading.Event()
 
@@ -84,7 +85,7 @@ class ReplayDialog(ModelDialog):
         busCursor = self.db.bus.find({"hash":frame['preset']},{"_id":0})
         if busCursor.count() > 0:
           self.requiredBus[frame['preset']] = busCursor[0]
-          self.requiredBus[frame['preset']]['presetLabel'] = busCursor[0]['name'] + " - " + str(busCursor[0]['speed'])  + SUPPORTED_SPEED_UNIT[busCursor[0]['type']]
+          self.requiredBus[frame['preset']]['presetLabel'] = "%s - %s %s"%(busCursor[0]['name'],busCursor[0]['speed'],SUPPORTED_SPEED_UNIT[busCursor[0]['type']])
 
     self.requiredBusOrder = sorted(self.requiredBus,
                           key=lambda k: (self.requiredBus[k]['type'], self.requiredBus[k]['name'], self.requiredBus[k]['speed']))
@@ -344,8 +345,9 @@ class ReplayDialog(ModelDialog):
                       QCoreApplication.translate("REPLAY","CURRENT_FRAME"), self.replayCurrentFrame,
                       QCoreApplication.translate("REPLAY","TIME_REMAINING"),rTime[0],rTime[1],rTime[2])
 
-      if self.replayCurrentFrame %50 == 0 or len(self.framesBuffer) < 1000 or self.replayCurrentFrame == len(self.framesBuffer):
+      if self.progressLastUpdate + REPLAY.PROGRESSBAR_UPDATE_DELAY < time.time():
         self.appSignals.updateProgressBar.emit([self.replayCurrentFrame, replayInfo])
+        self.progressLastUpdate = time.time()
 
     if self.feedback >= REPLAY.FEEDBACK_RECORD:
       self.appSignals.startSessionForensic.emit(True)

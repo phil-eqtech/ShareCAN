@@ -85,6 +85,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # -- UI Init --
     # Signals
     self.appSignals.startAnalysis.connect(lambda: self.openAnalysisWindow())
+    self.appSignals.updateAnalysis.connect(lambda: self.vehicleTitle.setText(self.setAnalysisLabel()))
 
     self.appSignals.switchBus.connect(lambda eventDict:self.switchBus(eventDict['id'], eventDict['dialog']))
 
@@ -451,7 +452,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     widgetType.setSizePolicy(sizePolicyCompact)
     self.analysisGridLayout.addWidget(widgetType, rowIndex, 1, 1, 1, Qt.AlignCenter)
 
-    widgetDate = QLabel(str(analysis['lastUpdate']))
+    dateLabel = datetime.datetime.fromtimestamp(int(analysis['lastUpdate']))
+    widgetDate = QLabel(str(dateLabel))
     widgetDate.setSizePolicy(sizePolicy)
     self.analysisGridLayout.addWidget(widgetDate, rowIndex, 2, 1, 1)
 
@@ -481,6 +483,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       self.loadSignals()
       self.db.analysis.update({"id": analysisId}, {"$set":{"lastUpdate":time.time()}})
       self.openAnalysisWindow()
+
 
   def setAnalysisLabel(self, analysis = None):
     spacer = ("<br />"," - ","","<br />")

@@ -216,7 +216,7 @@ class BusCAN:
             data['id'] = msg.arbitration_id
             data['extendedId'] = msg.is_extended_id
             data['len'] = msg.dlc
-            data['msg'] = msg.data
+            data['msg'] = list(msg.data)
             data['type'] = "can"
             data['ts'] = time.time()
             data['preset'] =  self.bus['preset']

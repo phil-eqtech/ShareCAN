@@ -741,7 +741,7 @@ class CommandDialog(ModelDialog):
           if (maxTs < 1 or ts_ == maxTs) and self.endPause == 0:
             sequenceEnded = True
             isEndPause = False
-          elif self.endPause > 0 and (ts > 0 and ts_ == maxTs + self.endPause -1):
+          elif self.endPause > 0 and (ts > 0 and ts_ == math.floor(maxTs) + self.endPause -1):
             sequenceEnded = True
             isEndPause = False
           else:

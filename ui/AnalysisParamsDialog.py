@@ -156,7 +156,6 @@ class AnalysisParamsDialog(ModelDialog):
 
     for elt in analysis:
       self.analysis[elt] = analysis[elt]
-    print(self.analysis)
 
     # If manufacturer/model is not known, we add them in the DB
     if analysis['manufacturer'] != None:
