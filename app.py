@@ -75,7 +75,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     self.appSignals = CustomSignals()
     self.interfaces = Interfaces(self.config, self.appSignals)
-    logging.debug("------------------------------------")
+
     self.signalFrameSrc = None
 
     self.activeWindows = {}
@@ -1088,7 +1088,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
   #Devices management
   def openDevicesDialog(self):
-    dlg = DevicesDialog(self.interfaces)
+    dlg = DevicesDialog(self)
     dlg.setWindowFlags(Qt.Dialog)
     self.setDialogSize(dlg, 800, 200)
     dlg.setStyleSheet(self.cssContent)

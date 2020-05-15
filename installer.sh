@@ -19,10 +19,11 @@ pip3 install bitstring
 pip3 install websockets
 
 
-mongo ShareCAN --eval 'db.devices.remove({"name":"Pican Duo"})'
+mongo ShareCAN --eval 'db.devices.remove({"name" : "Pican Duo"})'
 mongo ShareCAN --eval 'db.devices.remove({"name" : "Pican"})'
 mongo ShareCAN --eval 'db.devices.remove({"name" : "Peak"})'
 mongo ShareCAN --eval 'db.devices.remove({"name" : "Virtual CAN"})'
+mongo ShareCAN --eval 'db.devices.remove({"name" : "VCAN"})'
 mongo ShareCAN --eval 'db.config.remove({"autoconnect" : "vcan"})'
 
 mongo ShareCAN --eval 'db.devices.update({"name" : "Macchina M2"},{"name" : "Macchina M2", "interfaces" : [ { "type" : "can", "label" : "CAN 1", "mode" : "serial", "id" : "can1" }, { "type" : "lin", "label" : "LIN", "mode" : "serial", "id" : "lin" }, { "type" : "kln", "label" : "K-LINE", "mode" : "serial", "id" : "kline" }, { "type" : "can", "label" : "CAN 2", "mode" : "serial", "id" : "can2" } ], "ref" : "Arduino_LLC_Arduino_Due", "builtin" : false }, true)'

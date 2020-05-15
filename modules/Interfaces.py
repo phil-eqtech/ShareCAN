@@ -19,11 +19,8 @@ class Interfaces:
 
     self.loadKnownDevices()
     self.listDevices()
-
     self.autoMountBuiltInInterfaces()
     self.autoMountPermanentInterfaces()
-    logging.debug("DEVICES : %s"%self.devices)
-    logging.debug("BUS : %s"%self.bus)
 
   def __getitem__(self, key):
     return getattr(self, key)
@@ -85,16 +82,16 @@ class Interfaces:
   def autoMountBuiltInInterfaces(self):
     for device in self.devices:
       if self.devices[device]['builtin'] == True:
-        logging.debug("Connecting %s"%device)
+        mongoCursor = self.db.config.find({"builtInAltLabel": self.devices[device]['ref'] },{"_id":0})
+        if mongoCursor.count() > 0:
+          self.devices[device]['label'] = mongoCursor[0]['label']
         self.activateDevice(device, checkAltName = True)
-
 
   def autoMountPermanentInterfaces(self):
     permanentDevices = self.db.config.find({"autoconnect":{"$exists": True}},{"_id":0})
     for permanentDevice in permanentDevices:
       for device in self.devices:
         if permanentDevice["autoconnect"] == self.devices[device]["ref"]:
-          logging.debug("Connecting permanent %s"%device)
           self.devices[device]['label'] = permanentDevice["label"]
           self.devices[device]['permanent'] = True
           self.activateDevice(device, checkAltName = True)
@@ -113,6 +110,7 @@ class Interfaces:
               busAltName.append(elt)
           else:
             busAltName = None
+
           for iface in knownDevice['interfaces']:
             if knownDevice['builtin'] == True:
               busId = id

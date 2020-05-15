@@ -16,10 +16,11 @@ class DevicesList(QWidget, Ui_DEVICES):
 
 
 class DevicesDialog(ModelDialog):
-  def __init__(self, interfaces):
+  def __init__(self, refWindow):
     super().__init__()
 
-    self.interfaces = interfaces
+    self.getMainVariables(refWindow)
+
     self.interfaces.listDevices()
 
     # Close btn
@@ -88,9 +89,15 @@ class DevicesDialog(ModelDialog):
     sizePolicy.setHorizontalStretch(0)
     sizePolicy.setVerticalStretch(0)
 
-    deviceLabel = QLabel("", self.body.ifaceGridWidget)
-    deviceLabel.setObjectName("deviceLabel_" + bus['id'])
+    if bus['builtin'] == False:
+      deviceLabel = QLabel("", self.body.ifaceGridWidget)
+    else:
+      deviceLabel = QLineEdit("", self.body.ifaceGridWidget)
+      deviceLabel.textEdited.connect(lambda x: self.updateIfaceName(bus['id'], x, deviceLabel))
+      deviceLabel.setMaxLength(16)
     deviceLabel.setSizePolicy(sizePolicy)
+    deviceLabel.setObjectName("deviceLabel_" + bus['id'])
+
     self.body.ifaceGridLayout.addWidget(deviceLabel, rowIndex, 0, 1, 1)
     if isNewDevice == True:
       deviceLabel.setText(bus['deviceLabel'])
@@ -150,12 +157,20 @@ class DevicesDialog(ModelDialog):
       if self.interfaces.bus[busId]['label'] == prevValue:
         self.interfaces.bus[busId]['label'] = newName
 
+  def updateIfaceName(self, busId, newName, widget):
+    prevValue = self.interfaces.bus[busId]['deviceLabel']
+    if len(newName) == 0:
+      widget.setPlaceholderText(prevValue)
+    else:
+      self.interfaces.bus[busId]['deviceLabel'] = newName
+      self.db.config.update({"builtInAltLabel":busId},
+                            {"builtInAltLabel":busId,"label":newName}, True)
+
   def disconnectDevice(self, id):
     self.interfaces.deactivateDevice(id)
     self.drawDialogBody()
 
   def activateDevice(self, id, label = None, setPermanent = False):
-    print("Activating device %s with id %s (Permanent : %s) "%(label, id, setPermanent))
     if label != None and len(label) > 0:
       self.interfaces.devices[id]['label'] = label
     self.interfaces.activateDevice(id, setPermanent)
@@ -184,10 +199,9 @@ class DevicesDialog(ModelDialog):
 
     stdByDevices = 0
     if len(self.interfaces.devices) > 0:
-      logging.debug(self.interfaces.devices)
       deviceOrder = sorted(self.interfaces.devices, key=lambda x: (self.interfaces.devices[x]['name']))
       for id in deviceOrder:
-        if self.interfaces.devices[id]['active'] == False:
+        if self.interfaces.devices[id]['active'] == False and self.interfaces.devices[id]['builtin'] == False:
           self.addDevice(self.interfaces.devices[id], id)
           stdByDevices += 1
     if stdByDevices == 0:
