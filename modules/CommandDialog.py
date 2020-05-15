@@ -26,7 +26,7 @@ class CommandForm(QWidget, Ui_COMMAND):
 
 
 class CommandDialog(ModelDialog):
-  def __init__(self, refWindow, cmdId=False):
+  def __init__(self, refWindow, cmdId=False, cmdList=None):
     super().__init__()
 
     self.getMainVariables(refWindow)
@@ -96,7 +96,7 @@ class CommandDialog(ModelDialog):
     self.idValidator = UCValidator()
     self.byteValidator = UCValidator()
     self.upperCaseValidator = UCValidator(self)
-    self.body.fldRepeat.setValidator(QIntValidator(0, 1000, self))
+    self.body.fldRepeat.setValidator(QIntValidator(1, 1000, self))
 
     #Regex
     self.regexpNonBytes = "([\\+\\*\\-/^|&~\\<\\>s])+"
@@ -104,18 +104,18 @@ class CommandDialog(ModelDialog):
     self.regexpOperands = "([\\+\\*\\-/^|&~\\<\\>])"
 
     # Bus list
-    hashList = []
-    for bus in self.analysis['bus']:
-      hashList.append(bus['hash'])
-    busCursor = self.db.bus.find({"hash":{"$in":hashList}},{"_id":0})
-    self.avalaibleBus = []
-    if busCursor.count() > 0:
-      for bus in busCursor:
-        self.avalaibleBus.append(bus)
-      self.availableBus = sorted(self.avalaibleBus, key=lambda x: (x['type'], x['name']))
-
+    self.availableBus = sorted(self.analysis['bus'], key=lambda x: (x['type'], x['name']))
 
     self.drawDialogBody()
+
+    if cmdList != None:
+      for msg in cmdList:
+        msg_ = {"hash":{}, "id":None, "bytes":[]}
+        msg_['hash']['hash'] = msg['preset']
+        msg_['id'] = '{:x}'.format(msg['id'])
+        for b in msg['bytes'] :
+          msg_['bytes'].append('{:x}'.format(b['value']))
+        self.addMsg('activ',msg_)
 
 
   def closeDialog(self):
@@ -181,7 +181,6 @@ class CommandDialog(ModelDialog):
       if 'repeat' in cmd:
         self.body.fldRepeat.setText(cmd['repeat'])
 
-      logging.debug("LOAD : %s"%cmd)
       for cmd_ in cmd['cmd']['activ']:
         if cmd_['type'] == "pause":
           self.addPause(cmd_)
@@ -355,7 +354,6 @@ class CommandDialog(ModelDialog):
       busLabel = "%s : %s - %s %s"%(SUPPORTED_BUS_TYPE[msg['hash']['type']], msg['hash']['name'], msg['hash']['speed'], SUPPORTED_SPEED_UNIT[msg['hash']['type']])
       bus.addItem(busLabel + " *", msg['hash'])
       bus.setCurrentIndex(i)
-
     bus.setSizePolicy(sizePolicy)
 
     titleId = QLabel(QCoreApplication.translate("GENERIC","ID") + " :")
@@ -467,7 +465,6 @@ class CommandDialog(ModelDialog):
     elif re.search(self.regexpFormula, cmd['id']): # Check arithmetic
         try:
           cmd_ = self.formatFormula(cmd['id'])
-          logging.debug("EVAL %s"%cmd_)
           x = eval(cmd_)
         except:
           return self.showCmdError("INVALID_FORMULA", cmd['id'])
@@ -491,9 +488,7 @@ class CommandDialog(ModelDialog):
             return self.showCmdError("INVALID_BYTE_FUZZING", cmd['bytes'][i])
         elif re.search(self.regexpFormula, cmd['bytes'][i]):
           try:
-            logging.debug("B")
             cmd_ = self.formatFormula(cmd['bytes'][i])
-            logging.debug("EVAL %s"%cmd_)
             x = eval(cmd_)
           except:
             return self.showCmdError("INVALID_FORMULA", cmd['bytes'][i])
@@ -637,7 +632,7 @@ class CommandDialog(ModelDialog):
         self.setFuzzByteValue(i, self.fuzzBytes[i]['min'])
     bytesToFuzz = len(fuzzValues)
     repeat = self.body.fldRepeat.text()
-    if len(repeat) == 0:
+    if len(repeat) == 0 or int(repeat) == 0:
       repeat = 1
     else:
       repeat = int(repeat)

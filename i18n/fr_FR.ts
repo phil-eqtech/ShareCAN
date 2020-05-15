@@ -48,6 +48,10 @@
         <translation>Editeur de commande</translation>
     </message>
     <message>
+        <source>ECU_MAP_SCAN_UDS</source>
+        <translation>Liste des ECU/UDS</translation>
+    </message>
+    <message>
         <source>CAN_BTN</source>
         <translation>CAN</translation>
     </message>

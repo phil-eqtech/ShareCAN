@@ -146,17 +146,17 @@
         </item>
         <item>
          <property name="text">
-          <string>LIVE_REPLAY</string>
+          <string>FEEDBACK_LIVE</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>RECORD_REPLAY</string>
+          <string>FEEDBACK_RECORD</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>NEW_SESSION_RECORD</string>
+          <string>FEEDBACK_RECORD_NEW</string>
          </property>
         </item>
        </widget>
@@ -200,20 +200,7 @@
       </sizepolicy>
      </property>
      <layout class="QGridLayout" name="replayBusGridLayout">
-      <item row="0" column="0">
-       <widget class="QLabel" name="titleType">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>TYPE</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
+      <item row="0" column="3">
        <widget class="QLabel" name="titleIface">
         <property name="font">
          <font>
@@ -226,7 +213,26 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item row="0" column="0">
+       <widget class="QLabel" name="titleType">
+        <property name="maximumSize">
+         <size>
+          <width>80</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>TYPE</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
        <widget class="QLabel" name="titleBus">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -242,6 +248,19 @@
         </property>
         <property name="text">
          <string>BUS</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="titleName">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>NAME</string>
         </property>
        </widget>
       </item>

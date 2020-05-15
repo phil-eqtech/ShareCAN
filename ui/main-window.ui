@@ -1138,6 +1138,19 @@ margin-right:0.5em;</string>
             </spacer>
            </item>
            <item>
+            <widget class="QPushButton" name="btnMap">
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
+             <property name="text">
+              <string>ECU_MAP_SCAN_UDS</string>
+             </property>
+             <property name="cssClass" stdset="0">
+              <string>btn-secondary</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="btnCmdEditor">
              <property name="cursor">
               <cursorShape>PointingHandCursor</cursorShape>

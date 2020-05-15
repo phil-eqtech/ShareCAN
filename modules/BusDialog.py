@@ -45,6 +45,9 @@ class BusDialog(ModelDialog):
     self.body = BusList()
     self.dialogBody.addWidget(self.body)
 
+    regexPadding = QRegExp("[0-9a-fA-F!]{1,2}")
+    self.body.fldPadding.setValidator(QRegExpValidator(regexPadding))
+
     # Editing grid
     self.drawDialogBody()
 
@@ -454,6 +457,7 @@ class BusDialog(ModelDialog):
     wire = []
     bus['type'] = self.busType
     bus['name'] = self.body.fldName.text()
+    bus['padding'] = self.body.fldPadding.text()
     bus['speed'] = self.body.fldSpeed.currentData()
     if self.body.fldLinVersion.currentIndex() > 0:
       bus['version'] = self.body.fldLinVersion.currentData()
@@ -479,11 +483,10 @@ class BusDialog(ModelDialog):
       busCursor = self.db.bus.find({"hash": bus['hash'], "type":self.busType}, {"_id":1})
       if busCursor.count() == 0:
         self.db.bus.insert({"name": bus['name'], "type": bus['type'], "speed": bus['speed'],
-                              "manufacturer": self.analysis["manufacturer"], "hash": bus['hash']})
+                              "manufacturer": self.analysis["manufacturer"], "hash": bus['hash'], "padding":bus['padding']})
 
     # If hash altered, we remove the previous entry
     if self.editBus != False and bus['hash'] !=  self.editBus:
-
       msgBox = QMessageBox()
       msgBox.setText(QCoreApplication.translate("BUS","HASH_CHANGED"))
       msgBox.setInformativeText(QCoreApplication.translate("BUS","HASH_CHANGED_DETAILS"))
@@ -493,9 +496,9 @@ class BusDialog(ModelDialog):
       choice = msgBox.exec()
 
       if choice == QMessageBox.Ok:
-
-        self.db.bus.update({"hash": self.editBus}, {"name": bus['name'], "type": bus['type'], "speed": bus['speed'],
-                              "manufacturer": self.analysis["manufacturer"], "hash": bus['hash']})
+        self.db.bus.update({"hash": self.editBus},
+                              {"name": bus['name'], "type": bus['type'], "speed": bus['speed'],
+                              "manufacturer": self.analysis["manufacturer"], "hash": bus['hash'], "padding": bus['padding']})
         self.db.analysis.update({"id": self.analysis['id']},
                                   {"$pull":{"bus":{"hash": self.editBus}}})
         #self.db.analysis.update({"id": self.analysis['id'], "bus.hash": self.editBus},
@@ -511,7 +514,7 @@ class BusDialog(ModelDialog):
 
     if saveData == True:
       self.db.analysis.update({"id": self.analysis['id'], "bus.hash":bus['hash']},
-                              {"$set":{"bus.$.wire": bus['wire'], "bus.$.comment":bus['comment'],
+                              {"$set":{"bus.$.wire": bus['wire'], "bus.$.comment":bus['comment'], "bus.$.padding":bus['padding'],
                                         "bus.$.init":bus['init'], "bus.$.version": bus['version']}})
       self.db.analysis.update({"id": self.analysis['id']},{"$addToSet":{"bus":bus}, "$set":{"lastUpdate":time.time()}})
 
@@ -601,6 +604,7 @@ class BusDialog(ModelDialog):
 
   def fillEditor(self, busInfo):
     self.body.fldName.setText(busInfo['name'])
+    self.body.fldPadding.setText(busInfo['padding'])
     self.body.fldManufacturer.setText(busInfo['manufacturer'])
     self.body.fldComment.setPlainText(busInfo['comment'])
 
@@ -654,6 +658,7 @@ class BusDialog(ModelDialog):
           if not variant['bus'][0]['wire'] in variants:
             variants.append(variant['bus'][0]['wire'])
           presets.append({"manufacturer":bus['manufacturer'], "name":bus['name'], "speed":bus['speed'],
+                          "padding":bus['padding'],
                           "comment":variant['bus'][0]['comment'], "init":variant['bus'][0]['init'],
                           "version":variant['bus'][0]['version'],"hash":bus['hash'], "wire":variant['bus'][0]['wire']})
     # ADD GENERIC ?

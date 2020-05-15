@@ -19,22 +19,23 @@ import atexit
 import logging
 import re
 
+from ui.MainWindow import Ui_MainWindow
+from ui.AnalysisForm import Ui_AnalysisWindow
+
 from modules.Constants import *
 from modules.FrameWindow import *
 from modules.Interfaces import Interfaces
 from modules.Signals import CustomSignals
 from modules.BusCAN import BusCAN
-
-from ui.MainWindow import Ui_MainWindow
-from ui.AnalysisWindow import Ui_AnalysisWindow
-from ui.DevicesDialog import *
-from ui.BusDialog import *
-from ui.SessionDialog import *
-from ui.SignalDialog import *
-from ui.ReplayDialog import *
-from ui.CommandDialog import *
-from ui.AnalysisParamsDialog import *
-from ui.NotepadDialog import *
+from modules.DevicesDialog import *
+from modules.BusDialog import *
+from modules.SessionDialog import *
+from modules.SignalDialog import *
+from modules.ReplayDialog import *
+from modules.CommandDialog import *
+from modules.AnalysisParamsDialog import *
+from modules.NotepadDialog import *
+from modules.MapDialog import *
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -102,6 +103,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.appSignals.unFilterId.connect(lambda eventBool : self.unFilterId())
     self.appSignals.replaySelection.connect(lambda eventList: self.openReplayDialog(REPLAY.SELECTION, eventList))
     self.appSignals.replayCommand.connect(lambda eventDict: self.openReplayDialog(REPLAY.COMMAND, eventDict['frames'], eventDict['initMsg'], eventDict['startPause'], eventDict['endPause'], eventDict['hasFuzzing']))
+    self.appSignals.commandSelection.connect(lambda eventList: self.openCmdEditorDialog(cmdList=eventList))
     self.appSignals.copyCells.connect(lambda: self.copyCells())
 
     # Login - BTN signals
@@ -160,6 +162,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.btnSessionForensic.clicked.connect(lambda: self.sessionForensic())
     self.btnSessionNew.clicked.connect(lambda: self.sessionNew())
     self.btnCmdEditor.clicked.connect(lambda :self.openCmdEditorDialog(cmdId=False))
+    self.btnMap.clicked.connect(lambda :self.openECUMapDialog())
     self.btnSnap.clicked.connect(lambda: self.snapBus())
     self.btnSnapClear.clicked.connect(lambda: self.snapBus(clear=True))
     self.msgTable.doubleClicked.connect(lambda x:self.openSignalDialog(x))
@@ -195,6 +198,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     self.btnSessionLoad.setIcon(qta.icon("fa5.folder-open", options=btn_options))
     self.btnSessionSave.setIcon(qta.icon("fa5.save", options=btn_options))
     self.btnCmdEditor.setIcon(qta.icon("fa5s.terminal", options=btn_options))
+    self.btnMap.setIcon(qta.icon("fa.sitemap", options=btn_options))
     self.btnNotes.setIcon(qta.icon("mdi.notebook", options=btn_options))
     self.btnSnap.setIcon(qta.icon("fa5s.camera-retro", options=btn_options))
     self.btnSnapClear.setIcon(qta.icon("mdi.camera-off", options=btn_options))
@@ -833,21 +837,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
   def checkIfFilterExists(self, msg):
-    if not msg['presetLabel'] in self.session['idList']:
-      self.session['idList'][msg['presetLabel']] = []
-      self.session['filters'][msg['presetLabel']] = []
-      self.frameModel.filters[msg['presetLabel']] = []
+    if msg['busName'] + " - " in msg['presetLabel']:
+      busRef = msg['presetLabel']
+    else:
+      busRef = "%s : %s"%(msg['busName'],msg['presetLabel'])
+    if not busRef in self.session['idList']:
+      self.session['idList'][busRef] = []
+      self.session['filters'][busRef] = []
+      self.frameModel.filters[busRef] = []
 
       # Gen Parent in Tree view
-      self.filterWidgets['p_' + msg['presetLabel']] = QTreeWidgetItem(self.idFilter)
-      self.filterWidgets['p_' + msg['presetLabel']].setText(0, msg['presetLabel']) # TRANSLATE !
-      self.filterWidgets['p_' + msg['presetLabel']].setExpanded(True)
-      self.filterWidgets['p_' + msg['presetLabel']].setFlags(self.filterWidgets['p_' + msg['presetLabel']].flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
+      self.filterWidgets['p_' + busRef] = QTreeWidgetItem(self.idFilter)
+      self.filterWidgets['p_' + busRef].setText(0, busRef) # TRANSLATE !
+      self.filterWidgets['p_' + busRef].setExpanded(True)
+      self.filterWidgets['p_' + busRef].setFlags(self.filterWidgets['p_' + busRef].flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
 
-    if not msg['id'] in self.session['idList'][msg['presetLabel']]:
-      self.session['idList'][msg['presetLabel']].append(msg['id'])
-      id = "c_" + msg['presetLabel'] + str(msg['id'])
-      self.filterWidgets[id] = QTreeWidgetItem(self.filterWidgets['p_' + msg['presetLabel']])
+    if not msg['id'] in self.session['idList'][busRef]:
+      self.session['idList'][busRef].append(msg['id'])
+      id = "c_" + busRef + str(msg['id'])
+      self.filterWidgets[id] = QTreeWidgetItem(self.filterWidgets['p_' + busRef])
       self.filterWidgets[id].setFlags(self.filterWidgets[id].flags() | Qt.ItemIsUserCheckable)
       if msg['extendedId']==True:
         self.filterWidgets[id].setText(0, "{0:#0{1}x}".format(msg['id'],10))
@@ -858,6 +866,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
   def forwardBusMsg(self, dst, msg):
     if self.interfaces.bus[dst]['active'] == True:
+      #logging.debug("DST %s\nactiveBus : %s"%(dst, self.activeBus[dst]))
       self.activeBus[dst].sendMsg(msg, raw=True)
 
 
@@ -874,7 +883,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     if self.session['mode'] > SESSION_MODE.IDLE:
       timer = time.time()
       for idx in range(0,len(self.frameModel['frames'])):
-        if self.frameModel['frames'][idx]['id'] == msg['id'] and self.frameModel['frames'][idx]['preset'] == msg['preset']:
+        if self.frameModel['frames'][idx]['id'] == msg['id'] and self.frameModel['frames'][idx]['preset'] == msg['preset'] and self.frameModel['frames'][idx]['busName'] == msg['busName']:
             self.frameModel['frames'].pop(idx)
             break
 
@@ -1221,15 +1230,42 @@ class MainWindow(QMainWindow, Ui_MainWindow):
       r = dlg.exec_()
       self.signalFrameSrc = None
 
+  # ECU/UDS map
+  def openECUMapDialog(self):
+    if 'ecuMap' in self.activeWindows:
+      return False
+    self.activeWindows['ecuMap'] = ECUMapDialog(self)
+    self.setDialogSize(self.activeWindows['ecuMap'], 1024, 320)
+    self.activeWindows['ecuMap'].setStyleSheet(self.cssContent)
+    self.activeWindows['ecuMap'].setWindowTitle(QCoreApplication.translate("MainWindow","ECU_MAP_SCAN_UDS"))
+    self.activeWindows['ecuMap'].setWindowModality(Qt.NonModal)
+    self.activeWindows['ecuMap'].show()
+    self.activeWindows['ecuMap'].exec_()
+    del self.activeWindows['ecuMap']
 
   # Command editor
-  def openCmdEditorDialog(self, cmdId=False):
+  def openCmdEditorDialog(self, cmdId=False, cmdList=None):
     if 'cmdEditor' in self.activeWindows:
       return False
-    self.activeWindows['cmdEditor'] = CommandDialog(self, cmdId)
+
+    if cmdList != None:
+      logging.debug(cmdList)
+      frames = None
+      if len(cmdList) == 0:
+        cmdList = None
+      else:
+        r = []
+        frames = []
+        for cell in cmdList:
+          if not cell['row'] in r:
+            frames.append(self.frameModel.filteredFrames[cell['row']])
+            r.append(cell['row'])
+        cmdList = frames
+
+    self.activeWindows['cmdEditor'] = CommandDialog(self, cmdId, cmdList)
     self.setDialogSize(self.activeWindows['cmdEditor'], 1024, 320)
     self.activeWindows['cmdEditor'].setStyleSheet(self.cssContent)
-    self.activeWindows['cmdEditor'].setWindowTitle(QCoreApplication.translate("CMD","CMD_EDITOR"))
+    self.activeWindows['cmdEditor'].setWindowTitle(QCoreApplication.translate("MainWindow","CMD_EDITOR"))
     self.activeWindows['cmdEditor'].setWindowModality(Qt.NonModal)
     self.activeWindows['cmdEditor'].show()
     self.activeWindows['cmdEditor'].exec_()

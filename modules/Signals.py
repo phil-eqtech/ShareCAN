@@ -27,12 +27,15 @@ class CustomSignals(QObject):
   signalEditorRefresh  = pyqtSignal(dict)
   signalReload = pyqtSignal(bool)
 
+  scanEnded = pyqtSignal(bool)
+
   # Frame model / msg Table
   flagId = pyqtSignal(list)
   filterHideId = pyqtSignal(list)
   filterShowId = pyqtSignal(list)
   unFilterId = pyqtSignal(bool)
   replaySelection = pyqtSignal(list)
+  commandSelection = pyqtSignal(list)
   replayCommand = pyqtSignal(dict)
   copyCells = pyqtSignal(bool)
   updateProgressBar = pyqtSignal(list)

@@ -59,15 +59,14 @@ class Interfaces:
       if len(self.devices) > len(tmpDevicesList):
         for ref in self.devices:
           if not ref in tmpDevicesList:
-            print("Manage disconnected device")
-            print(ref)
+            pass
+            # BUILD DISCONNECT DETECTION
 
     # Look for builtin devices
-
     for knownDevice in self.knownDevices:
       if knownDevice['builtin'] == True:
-        process = subprocess.Popen(['dmesg'], stdout=subprocess.PIPE)
-        dmesg = subprocess.Popen(['grep',knownDevice['ref']], stdin=process.stdout, stdout=subprocess.PIPE)
+        process = subprocess.Popen(['ip','link'], stdout=subprocess.PIPE)
+        dmesg = subprocess.Popen(['grep','can'], stdin=process.stdout, stdout=subprocess.PIPE)
         process.wait()
         out, err = output = dmesg.communicate()
         if len(out) > 0:

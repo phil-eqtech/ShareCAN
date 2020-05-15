@@ -10,6 +10,7 @@ import subprocess
 # Update this variable to register an .ui file and the desired template
 
 files = [{"ui":"main-window", "template":"MainWindow"},
+          {"ui":"form-analysis", "template":"AnalysisForm"},
           {"ui":"form-bus", "template":"BusForm"},
           {"ui":"form-devices", "template":"DevicesForm"},
           {"ui":"form-sessions", "template":"SessionsForm"},
@@ -17,7 +18,8 @@ files = [{"ui":"main-window", "template":"MainWindow"},
           {"ui":"form-replay", "template":"ReplayForm"},
           {"ui":"form-commands", "template":"CommandsForm"},
           {"ui":"form-notepad", "template":"NotepadForm"},
-          {"ui":"form-analysis_params", "template":"AnalysisParamsForm"},]
+          {"ui":"form-analysis_params", "template":"AnalysisParamsForm"},
+          {"ui":"form-map", "template":"MapForm"},]
 
 # MainWindow
 for file in files:

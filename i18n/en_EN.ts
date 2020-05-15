@@ -48,6 +48,10 @@
         <translation>Command editor</translation>
     </message>
     <message>
+        <source>ECU_MAP_SCAN_UDS</source>
+        <translation>ECU/UDS map</translation>
+    </message>
+    <message>
         <source>CAN_BTN</source>
         <translation>CAN</translation>
     </message>

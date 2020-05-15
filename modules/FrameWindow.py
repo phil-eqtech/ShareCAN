@@ -42,6 +42,10 @@ class TableView(QTableView):
     replayAction.setIcon(qta.icon('mdi.replay'))
     replayAction.triggered.connect(lambda: self.appSignals.replaySelection.emit(cells))
 
+    commandAction = QAction(QCoreApplication.translate("MENU","SET_COMMAND"), self)
+    commandAction.setIcon(qta.icon('fa5s.terminal'))
+    commandAction.triggered.connect(lambda: self.appSignals.commandSelection.emit(cells))
+
     flagAction = QAction(QCoreApplication.translate("MENU","SET_FLAG"), self)
     flagAction.setIcon(qta.icon('mdi.flag'))
     flagAction.triggered.connect(lambda: self.appSignals.flagId.emit(cells))
@@ -59,6 +63,7 @@ class TableView(QTableView):
     self.menu.addAction(unFilterAction)
     self.menu.addSeparator()
     self.menu.addAction(replayAction)
+    self.menu.addAction(commandAction)
     self.menu.addSeparator()
     self.menu.addAction(flagAction)
     self.menu.addAction(unFlagAction)
@@ -213,7 +218,11 @@ class framesTableModel(QAbstractTableModel):
     def applyFilters(self):
       self.filteredFrames = []
       for idx in range(0, len(self.frames)):
-        if not self.frames[idx]['id'] in self.filters[self.frames[idx]['presetLabel']]:
+        if self.frames[idx]['busName'] + " - " in self.frames[idx]['presetLabel']:
+          busRef = self.frames[idx]['presetLabel']
+        else:
+          busRef = "%s : %s"%(self.frames[idx]['busName'],self.frames[idx]['presetLabel'])
+        if not self.frames[idx]['id'] in self.filters[busRef]:
           self.filteredFrames.append(self.frames[idx])
 
 

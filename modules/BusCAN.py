@@ -11,15 +11,10 @@ import pexpect
 # GLOBAL
 from modules.Constants import *
 
-# CONSTANTS
-UDS_STD = 'UDS_STD'
-strictMode = True
-minDelay = 0.1
-canReplyTimeout = 2
 
 class BusCAN:
   def __init__(self, bus, signals, session):
-    self.wishes = {}
+
     self.bus = bus
     self.threads = {}
     self.threadStopManager = {}
@@ -27,6 +22,11 @@ class BusCAN:
     self.appSignals = signals
     self.idValues = {}
     self.session = session
+
+    # Varaibles needed for UDS scan
+    self.wish = None
+    self.requestIsPositive = threading.Event()
+    self.response = {"id":None, "msg":None, "error":None, "errorCode":None, "isoTp":False}
 
     self.initBus()
 
@@ -74,7 +74,7 @@ class BusCAN:
 
 
   def callShellCmdIp(self, status = 'up'):
-    if self.bus['bus'] != "vcan0":
+    if not "vcan" in self.bus['bus']:
       args = ['sudo','/sbin/ip', 'link', 'set', status, self.bus['bus']]
       p = subprocess.Popen(args)
       p.communicate()
@@ -104,7 +104,7 @@ class BusCAN:
 
 
   def setBuiltinSpeed(self):
-    if self.bus['bus'] != "vcan0":
+    if not "vcan" in self.bus['bus']:
       args = ['sudo','/sbin/ip', 'link', 'set', 'down', self.bus['bus']]
       p = subprocess.Popen(args)
       p.communicate()
@@ -138,57 +138,91 @@ class BusCAN:
       del self.threads['capturing']
 
 
-  def setWish(self, name, id=None, validReply=None, errorReply = False, strictReply = False, validId = None):
-    if not name in self.wishes:
-      wish = {"occurs": threading.Event(), "id": id, "validReply": validReply, "errorReply": errorReply, "strictReply": strictReply, "validId":validId}
-      self.wishes[name] = wish
+
+  # Request / Wish
+  def request(self, msg, mode = SCAN.MODE_LEGACY, padding=None):
+    self.requestIsPositive.clear()
+    self.response['id'] = None
+    self.response['msg'] = None
+    self.response['isoTp'] = False
+    self.response['error'] = False
+    self.response['errorCode'] = None
+    self.setWish(msg, mode, padding)
+    if not 'extendedId' in msg:
+      if msg['id'] > 0x7FF:
+        msg['extendedId'] = True
+      else:
+        msg['extendedId'] = False
+    self.sendMsg(msg)
+
+  def setWish(self, msg, mode, padding):
+    self.wish = {"id": msg['id'], "msg": msg['msg'], "mode": mode, "padding":padding}
 
 
-  def checkWishes(self, msg):
-    self.canDelWishes.clear()
-    for name in self.wishes:
-      if self.wishes[name]["validId"] != None and msg.arbitration_id == self.wishes[name]["validId"]:
-        self.validateWish(name, msg)
-        self.canDelWishes.set()
-        return True
-
-      if (self.wishes[name]["strictReply"] == False or self.wishes[name]["id"] + 0x08 == msg.arbitration_id):
-        isotp = 0
-        validBytes = 0
-        if msg.data[0] & 0xF0 == 0x10:
-          isotp = 1
-        if (self.wishes[name]["validReply"] != None):
-          for bytePos in self.wishes[name]["validReply"]:
-            b = bytePos + isotp
-            if msg.data[b] == self.wishes[name]["validReply"][bytePos]:
-              validBytes += 1
-          if validBytes == len(self.wishes[name]["validReply"]):
-            self.validateWish(name, msg)
-            self.canDelWishes.set()
-            return True
-
-        if isotp == 0 and self.wishes[name]["errorReply"] != False:
-          validBytes = 0
-          for bytePos in self.wishes[name]["errorReply"]:
-            if msg.data[bytePos] == self.wishes[name]["errorReply"][bytePos]:
-              validBytes += 1
-          if validBytes == len(self.wishes[name]["errorReply"]):
-            self.validateWish(name, msg)
-            self.canDelWishes.set()
-            return True
-    self.canDelWishes.set()
-    return False
+  def checkWish(self, msg):
+    isValid = False
+    if self.wish['mode'] < SCAN.MODE_SMART:
+      if msg.arbitration_id == self.wish['id'] + UDS.REPLY_ID_INCREMENT:
+        self.analyseUDSMsg(msg)
+      else:
+        return False
+    else:
+      if (msg.data[0] <= 0x08 and msg.data[1] == UDS.ERROR_CODE and msg.data[2] == self.wish['msg'][1]) or ((msg.data[0] <= 0x08 or msg.data[0] & 0xF0 == 0x10) and msg.data[1] == self.wish['msg'][1] + UDS.REPLY_VALID_SERVICE):
+        self.analyseUDSMsg(msg)
+      else:
+        return False
 
 
-  def validateWish(self, name, msg):
-    self.wishes[name]["replyMsg"] = msg.data
-    self.wishes[name]["replyId"] = msg.arbitration_id
-    self.wishes[name]["occurs"].set()
+  def analyseUDSMsg(self, msg):
+    if (msg.data[0] &0xF0) == 0x10: #ISOTP init
+      self.wish['mode'] = SCAN.MODE_LEGACY
+      self.wish['srcId'] =  self.wish['id']
+      self.wish['id'] = msg.arbitration_id - UDS.REPLY_ID_INCREMENT
 
+      self.wish['isoTpLen'] = (msg.data[0] & 0x0F)*256 + msg.data[1]
+      self.wish['counter'] = 0
+      if self.wish['msg'][0] == 0x01:
+        start = 3
+      else:
+        start = 4
+      self.wish['isoTpMsg'] = []
+      for i in range(start, 8):
+        self.wish['isoTpMsg'].append(msg.data[i])
+        self.wish['counter'] += 1
 
-  def delWish(self, name):
-    self.canDelWishes.wait()
-    del self.wishes[name]
+      reply = UDS.ISOTP_CONTINUE
+      if self.wish['padding'] != None:
+        for i in range(len(reply), 8):
+          reply.append(self.wish['padding'])
+      self.sendMsg(self.wish['srcId'], reply)
+    elif (msg.data[0] & 0xF0) == 0x20:
+      for i in range(1, len(msg["data"])):
+        if self.wish['counter'] < self.wish['isoTpLen'] - 2:
+          self.wish['isoTpMsg'].append(msg.data[i])
+          self.wish['counter'] += 1
+      if self.wish['counter'] >= self.wish['isoTpLen'] - 2:
+        self.response['id'] = msg.arbitration_id
+        self.response['msg'] = self.wish['isoTpMsg']
+        self.response['isoTp'] = True
+        self.response['status'].set()
+      if msg.data[0] == 0x2F:
+        reply = UDS.ISOTP_CONTINUE
+        if self.wish['padding'] != None:
+          for i in range(len(reply), 8):
+            reply.append(self.wish['padding'])
+        self.sendMsg(self.wish['srcId'], reply)
+
+    elif msg.data[1] == UDS.ERROR_CODE:
+      self.response['id'] = msg.arbitration_id
+      self.response['msg'] = list(msg.data)
+      self.response['error'] = True
+      self.response['errorCode'] = msg.data[3]
+      self.requestIsPositive.set()
+    else:
+      self.response['id'] = msg.arbitration_id
+      self.response['msg'] = list(msg.data)
+      self.requestIsPositive.set()
+
 
 
   def watchBus(self):
@@ -202,13 +236,17 @@ class BusCAN:
       if msg is not None:
         with self._lock:
           if (msg):
-            # A reply is awaited ?
-            #if len(self.wishes) > 0:
-            #  self.checkWishes(msg)
+            if self.wish != None:
+              self.checkWish(msg)
 
             # Gw Management
             if self.bus['gw'] != None:
-              self.appSignals.gatewayForward.emit({"dst":self.bus['gw'], "msg":msg})
+              if self.bus['label'] + " - " in self.bus['presetLabel']:
+                busRef = self.bus['presetLabel']
+              else:
+                busRef = "%s : %s"%(self.bus['label'],self.bus['presetLabel'])
+              if not busRef in self.session['filters'] or not msg.arbitration_id in self.session['idList'][busRef] or (busRef in self.session['filters']  and not msg.arbitration_id in self.session['filters'][busRef]):
+                self.appSignals.gatewayForward.emit({"dst":self.bus['gw'], "msg":msg})
 
             # Parsing details from message
             timer = time.time()
@@ -242,84 +280,4 @@ class BusCAN:
 
 
   def craftMsg(self, arbId, msg, extended_id = 0):
-    """if self.padding != None:
-      for i in range (len(msg), 8):
-        msg.append(self.padding)
-    """
     return can.Message(arbitration_id=arbId, data=msg, extended_id=extended_id)
-
-  # TO REWRITE
-  def request(self, arbId, msg, trigger=UDS_STD, checkError = False, strictReply=strictMode, replyTimeout=canReplyTimeout):
-    data = self.craftMsg(arbId, msg)
-    wishName = uuid.uuid4().hex
-
-    replyLen = 0
-    replyMsg = []
-
-    if trigger == UDS_STD:
-      if msg[0] == 0x01:
-        validReply = {1: msg[1] + 0x40}
-      else:
-        validReply = {1: msg[1] + 0x40, 2: msg[2]}
-    else:
-      validReply = trigger
-
-    if (checkError != False):
-      if (checkError == True):
-        errorReply = {1: 0x7F, 2:msg[1]}
-      else:
-        errorReply = checkError
-    else:
-      errorReply = False
-
-    self.setWish(wishName, arbId, validReply, errorReply, strictReply)
-
-    self.bus.send(data)
-
-    self.wishes[wishName]["occurs"].wait(replyTimeout)
-    if self.wishes[wishName]["occurs"].is_set():
-      if checkError != False and self.wishes[wishName]["replyMsg"][1] == 0x7F:
-        self.delWish(wishName)
-        return {"status": "error", "replyId":self.wishes[wishName]["replyId"], "replyLen":None, "replyMsg":None}
-      else:
-        if self.wishes[wishName]["replyMsg"][0] & 0xF0 == 0x10: # ISOTP
-          replyLen = (self.wishes[wishName]["replyMsg"][0] & 0x0F)*256 + self.wishes[wishName]["replyMsg"][1]
-          counter = 0
-          if msg[0] == 0x01:
-            start = 3
-          else:
-            start = 4
-          for i in range(start, 8):
-            replyMsg.append(self.wishes[wishName]["replyMsg"][i])
-            counter += 1
-          replyId = self.wishes[wishName]["replyId"]
-
-          self.delWish(wishName)
-          wishName = uuid.uuid4().hex
-          self.setWish(wishName, validId = replyId)
-
-          isoTPFollowCommand = self.craftMsg(arbId,[0x30, 0x00, 0x00])
-          self.bus.send(isoTPFollowCommand)
-          timer = time.time()
-          while counter < replyLen - 2 and timer + replyTimeout > time.time():
-            self.wishes[wishName]["occurs"].wait(replyTimeout)
-            if self.wishes[wishName]["occurs"].is_set():
-              for i in range(1, len(self.wishes[wishName]["replyMsg"])):
-                if counter < replyLen - 2:
-                  replyMsg.append(self.wishes[wishName]["replyMsg"][i])
-                  counter += 1
-              if counter < replyLen - 2 and self.wishes[wishName]["replyMsg"][0] == 0x29:
-                self.bus.send(isoTPFollowCommand)
-                self.delWish(wishName)
-                self.setWish(wishName, validId = replyId)
-              else:
-                self.wishes[wishName]["occurs"].clear()
-              timer = time.time()
-        else:
-          replyMsg = self.wishes[wishName]["replyMsg"]
-          replyLen = len(self.wishes[wishName]["replyMsg"])
-        self.delWish(wishName)
-        return {"status": "success", "replyId":replyId, "replyLen":replyLen, "replyMsg":replyMsg}
-    else:
-      self.delWish(wishName)
-      return {"status": "noreply", "replyId":None, "replyLen":None, "replyMsg":None}

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'analysiswindow.ui'
+# Form implementation generated from reading ui file 'form-analysis.ui'
 #
 # Created by: PyQt5 UI code generator 5.11.3
 #
@@ -28,6 +28,8 @@ class Ui_AnalysisWindow(object):
         self.horizontalLayout_5.setContentsMargins(0, 0, 0, -1)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.btnMainMenu = QtWidgets.QPushButton(self.mainMenu)
+        self.btnMainMenu.setMinimumSize(QtCore.QSize(32, 32))
+        self.btnMainMenu.setSizeIncrement(QtCore.QSize(2, 0))
         self.btnMainMenu.setText("")
         self.btnMainMenu.setObjectName("btnMainMenu")
         self.horizontalLayout_5.addWidget(self.btnMainMenu)
@@ -332,6 +334,7 @@ class Ui_AnalysisWindow(object):
         _translate = QtCore.QCoreApplication.translate
         AnalysisWindow.setWindowTitle(_translate("AnalysisWindow", "Share-CAN"))
         self.mainMenu.setProperty("cssClass", _translate("AnalysisWindow", "mainMenu"))
+        self.btnMainMenu.setProperty("cssClass", _translate("AnalysisWindow", "menuBtn"))
         self.label.setText(_translate("AnalysisWindow", "APP_NAME"))
         self.label.setProperty("cssClass", _translate("AnalysisWindow", "appTitle"))
         self.btnDevices.setProperty("cssClass", _translate("AnalysisWindow", "menuBtn"))

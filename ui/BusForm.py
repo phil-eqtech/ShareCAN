@@ -299,6 +299,7 @@ class Ui_BUS(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.fldPadding.sizePolicy().hasHeightForWidth())
         self.fldPadding.setSizePolicy(sizePolicy)
+        self.fldPadding.setMinimumSize(QtCore.QSize(0, 0))
         self.fldPadding.setMaxLength(3)
         self.fldPadding.setObjectName("fldPadding")
         self.gridLayout.addWidget(self.fldPadding, 1, 5, 1, 1)

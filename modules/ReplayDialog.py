@@ -78,17 +78,23 @@ class ReplayDialog(ModelDialog):
     # Defining required BUS
     self.requiredBusWidgets = []
     self.requiredBus = {}
-    self.validBus = {}
+    self.setBus = {}
 
     for frame in self.frames:
-      if frame['type'] in REPLAY.SUPPORTED_BUS_TYPE and not frame['preset'] in self.requiredBus:
+      if frame['busName'] + " - " in frame['presetLabel']:
+        busName = frame['presetLabel']
+      else:
+        busName = "%s : %s"%(frame['busName'],frame['presetLabel'])
+      if frame['type'] in REPLAY.SUPPORTED_BUS_TYPE and not busName in self.requiredBus:
         busCursor = self.db.bus.find({"hash":frame['preset']},{"_id":0})
         if busCursor.count() > 0:
-          self.requiredBus[frame['preset']] = busCursor[0]
-          self.requiredBus[frame['preset']]['presetLabel'] = "%s - %s %s"%(busCursor[0]['name'],busCursor[0]['speed'],SUPPORTED_SPEED_UNIT[busCursor[0]['type']])
+          self.requiredBus[busName] = busCursor[0]
+          self.requiredBus[busName]['label'] = frame['busName']
+          self.requiredBus[busName]['preset'] = frame['preset']
+          self.requiredBus[busName]['presetLabel'] = "%s - %s %s"%(busCursor[0]['name'],busCursor[0]['speed'],SUPPORTED_SPEED_UNIT[busCursor[0]['type']])
 
     self.requiredBusOrder = sorted(self.requiredBus,
-                          key=lambda k: (self.requiredBus[k]['type'], self.requiredBus[k]['name'], self.requiredBus[k]['speed']))
+                          key=lambda k: (self.requiredBus[k]['type'], self.requiredBus[k]['name'], self.requiredBus[k]['speed'], self.requiredBus[k]['label']))
 
     # Signals
     self.appSignals.updateProgressBar.connect(lambda eventList: self.updateProgressBar(eventList))
@@ -126,32 +132,40 @@ class ReplayDialog(ModelDialog):
 
 
   def selfInitInterfaces(self):
-    self.validBus = {}
+    self.setBus = {}
 
     for elt in self.requiredBusWidgets:
       widget = elt['widget']
-      bus = self.requiredBus[elt['preset']]
+      bus = self.requiredBus[elt['busName']] # Manque element
       if widget.currentIndex() > 0:
         iface = widget.currentData()
-        logging.debug("Updating bus %s data : \n%s\n"%(iface['id'], iface))
-        self.validBus[elt['preset']] = iface['id']
-        if self.interfaces.bus[iface['id']]['active'] == False or self.interfaces.bus[iface['id']]['preset'] != elt['preset']:
+        self.setBus[elt['busName']] = iface['id']
+        initBus = False
+        if self.interfaces.bus[iface['id']]['active'] == False:
+          initBus = True
+        else:
+          initBus = True
+          for bus_ in self.setBus:
+            if self.setBus[bus_] == iface['id'] and bus_ != elt['busName']:
+              initBus = False
+        if initBus == True:
           if self.interfaces.bus[iface['id']]['gw'] != None:
             self.interfaces.bus[self.interfaces.bus[iface['id']]['gw']] = None
           self.interfaces.bus[iface['id']]['gw'] = None
           self.interfaces.bus[iface['id']]['preset'] = bus['hash']
           self.interfaces.bus[iface['id']]['speed'] = bus['speed']
-          self.interfaces.bus[iface['id']]['label'] = bus['name']
           self.interfaces.bus[iface['id']]['presetLabel'] = bus['presetLabel']
-          logging.debug("Switching bus : %s\n\n"% self.interfaces.bus[iface['id']])
           self.appSignals.switchBus.emit({"id":iface['id'], "dialog":None})
+          self.interfaces.bus[iface['id']]['label'] = elt['busInfo']['label']
 
 
   def updateFeedback(self, index):
     self.feedback = index
 
+
   def updateLive(self, value):
     self.live = value
+
 
   def switchSlice(self, sliceOrder = SLICE.NEXT):
     self.threadStopManager['replay'].clear()
@@ -243,7 +257,7 @@ class ReplayDialog(ModelDialog):
     elif self.feedback == REPLAY.FEEDBACK_RECORD:
       self.appSignals.startSessionRecording.emit(False)
     elif self.feedback == REPLAY.FEEDBACK_RECORD_NEW_SESSION:
-      if self.replayCurrentFrame == 0:
+      if self.replayIsPaused == False:
         self.appSignals.startSessionRecording.emit(True)
       else:
         self.appSignals.startSessionRecording.emit(False)
@@ -283,10 +297,17 @@ class ReplayDialog(ModelDialog):
     cumulatedSleep = 0
 
     if self.replayCurrentFrame != 0 and len(self.initMsg) > 0:
+      logging.debug("INIT %s\n%s"%(self.initMsg, self.setBus))
       for f in self.initMsg:
-        if f['preset'] in self.validBus:
-          busId = self.validBus[f['preset']]
-          self.activeBus[busId].sendMsg(f)
+        if f['busName'] + " - " in f['presetLabel']:
+          busRef = f['presetLabel']
+        else:
+          busRef = "%s : %s"%(f['busName'], f['presetLabel'])
+
+        if busRef in self.setBus:
+          busId = self.setBus[busRef]
+          if not busRef in self.session['filters'] or not f['id'] in self.session['idList'][busRef] or (busRef in self.session['filters']  and not f['id'] in self.session['filters'][busRef]):
+            self.activeBus[busId].sendMsg(f)
 
     if self.startPause > 0 and self.replayCurrentFrame == 0:
       time.sleep(self.startPause / 1000)
@@ -295,10 +316,6 @@ class ReplayDialog(ModelDialog):
       if self.replayCurrentFrame < self.bufferLen:
 
         f = self.framesBuffer[self.replayCurrentFrame]
-
-        if f['preset'] in self.validBus:
-          busId = self.validBus[f['preset']]
-          self.activeBus[busId].sendMsg(f)
 
         if 'isFuzzed' in f:
           if f['id'] != self.fuzzId:
@@ -313,6 +330,17 @@ class ReplayDialog(ModelDialog):
             for byte in f['msg']:
               str += "{0:0{1}x}".format(byte,2) + " "
             self.body.lblMsg.setText(str)
+
+        if f['busName'] + " - " in f['presetLabel']:
+          busRef = f['presetLabel']
+        else:
+          busRef = "%s : %s"%(f['busName'], f['presetLabel'])
+
+        if busRef in self.setBus:
+          busId = self.setBus[busRef]
+
+          if not busRef in self.session['filters'] or not f['id'] in self.session['idList'][busRef] or (busRef in self.session['filters']  and not f['id'] in self.session['filters'][busRef]):
+            self.activeBus[busId].sendMsg(f)
 
         if self.feedback > REPLAY.FEEDBACK_NONE:
           f_ = f.copy()
@@ -345,7 +373,7 @@ class ReplayDialog(ModelDialog):
                       QCoreApplication.translate("REPLAY","CURRENT_FRAME"), self.replayCurrentFrame,
                       QCoreApplication.translate("REPLAY","TIME_REMAINING"),rTime[0],rTime[1],rTime[2])
 
-      if self.progressLastUpdate + REPLAY.PROGRESSBAR_UPDATE_DELAY < time.time():
+      if self.progressLastUpdate + REPLAY.PROGRESSBAR_UPDATE_DELAY < time.time() or self.bufferLen < REPLAY.PROGRESSBAR_SMALL_BUFFER or self.replayCurrentFrame >= self.bufferLen:
         self.appSignals.updateProgressBar.emit([self.replayCurrentFrame, replayInfo])
         self.progressLastUpdate = time.time()
 
@@ -444,8 +472,11 @@ class ReplayDialog(ModelDialog):
     busType = QLabel(SUPPORTED_BUS_TYPE[bus['type']])
     self.body.replayBusGridLayout.addWidget(busType, rowIndex, 0, 1, 1)
 
+    busName = QLabel(bus['label'])
+    self.body.replayBusGridLayout.addWidget(busName, rowIndex, 1, 1, 1)
     busLabel = QLabel(bus['presetLabel'])
-    self.body.replayBusGridLayout.addWidget(busLabel, rowIndex, 1, 1, 1)
+
+    self.body.replayBusGridLayout.addWidget(busLabel, rowIndex, 2, 1, 1)
 
     busIface = QComboBox()
     busIface.addItem("-", None)
@@ -454,12 +485,15 @@ class ReplayDialog(ModelDialog):
     for k in self.busListOrder:
       if self.interfaces.bus[k]['type'] == bus['type']:
         busIface.addItem(self.interfaces.bus[k]['deviceLabel'] + " " + self.interfaces.bus[k]['name'], self.interfaces.bus[k])
-        if key == self.interfaces.bus[k]['preset']:
+        if bus['preset'] == self.interfaces.bus[k]['preset'] and bus['label'] == self.interfaces.bus[k]['label']:
           selectedIndex = busIface.count() -1
           busIface.setCurrentIndex(selectedIndex)
-    self.body.replayBusGridLayout.addWidget(busIface, rowIndex, 2, 1, 1)
-    self.requiredBusWidgets.append({"widget":busIface, "preset":key})
+    self.body.replayBusGridLayout.addWidget(busIface, rowIndex, 3, 1, 1)
+    self.requiredBusWidgets.append({"widget":busIface, "busName":key, "busInfo":bus})
 
+
+  def updateLoop(self, checked):
+    self.loop = checked
 
   def switchSmartButtons(self, visible=True):
     self.body.btnPrevious.setVisible(visible)
@@ -486,7 +520,7 @@ class ReplayDialog(ModelDialog):
 
   def switchMainButtons(self, disabled = True):
     self.body.checkLoop.setDisabled(disabled)
-    #self.body.comboLive.setDisabled(disabled)
+    self.body.comboFeedback.setDisabled(disabled)
 
     if disabled == True:
       cssClass="btn-disabled"
@@ -542,7 +576,6 @@ class ReplayDialog(ModelDialog):
     self.body.lblId.setVisible(display)
     self.body.lblMsg.setVisible(display)
     self.body.titleFeedback.setVisible(display)
-    self.body.comboFeedback.setVisible(display)
 
     for key in self.requiredBusOrder:
       self.addRequiredBus(key)
