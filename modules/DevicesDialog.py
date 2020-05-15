@@ -3,6 +3,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import qtawesome as qta
 import time
+import logging
 
 from ui.ModelDialog import ModelDialog
 from ui.DevicesForm import Ui_DEVICES
@@ -183,6 +184,7 @@ class DevicesDialog(ModelDialog):
 
     stdByDevices = 0
     if len(self.interfaces.devices) > 0:
+      logging.debug(self.interfaces.devices)
       deviceOrder = sorted(self.interfaces.devices, key=lambda x: (self.interfaces.devices[x]['name']))
       for id in deviceOrder:
         if self.interfaces.devices[id]['active'] == False:
@@ -192,5 +194,3 @@ class DevicesDialog(ModelDialog):
       noDevices = QLabel(QCoreApplication.translate("DEVICES","NO_AVAILABLE_DEVICES"),self.body.deviceGridWidget)
       noDevices.setObjectName("noDevice")
       self.body.deviceGridLayout.addWidget(noDevices, 1, 0, 1, 5, Qt.AlignCenter)
-
-  

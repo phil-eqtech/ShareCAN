@@ -19,9 +19,11 @@ class Interfaces:
 
     self.loadKnownDevices()
     self.listDevices()
+
     self.autoMountBuiltInInterfaces()
     self.autoMountPermanentInterfaces()
-
+    logging.debug("DEVICES : %s"%self.devices)
+    logging.debug("BUS : %s"%self.bus)
 
   def __getitem__(self, key):
     return getattr(self, key)
@@ -47,7 +49,7 @@ class Interfaces:
         usbInfo = deviceList[i].split(" - ")
 
         for knownDevice in self.knownDevices:
-          if knownDevice['ref'] in usbInfo[1]:
+          if knownDevice['ref'] in usbInfo[1] and knownDevice['builtin'] == False:
             if not deviceList[i] in self.devices:
               tmpDevicesList[deviceList[i]] = {"name":knownDevice['name'], "label":knownDevice['name'][0:8], "builtin":knownDevice['builtin'], "port":usbInfo[0], "ref":usbInfo[1], "permanent":False, "active":False}
               if 'baudrate' in knownDevice:
@@ -62,34 +64,29 @@ class Interfaces:
             pass
             # BUILD DISCONNECT DETECTION
 
-    # Look for builtin devices
-    for knownDevice in self.knownDevices:
-      if knownDevice['builtin'] == True:
-        process = subprocess.Popen(['ip','link'], stdout=subprocess.PIPE)
-        dmesg = subprocess.Popen(['grep','can'], stdin=process.stdout, stdout=subprocess.PIPE)
-        process.wait()
-        out, err = output = dmesg.communicate()
-        if len(out) > 0:
-          if type(out) == bytes:
-            out = out.decode()
-          devices = re.findall("([v]*can[0-9]*):", out)
-          for device in devices:
-            if device == "vcan":
-              device = "vcan0"
-            if not device in self.devices:
-              tmpDevicesList[device] = {"name":"%s (%s)"%(knownDevice['name'], device), "label":"%s (%s)"%(knownDevice['name'], device), "builtin":knownDevice['builtin'], "port":device, "ref":knownDevice['ref'], "permanent":False, "active":False}
-            else:
-              tmpDevicesList[device] = self.devices[device]
+      # Look for builtin devices
+      process = subprocess.Popen(['ip','link'], stdout=subprocess.PIPE)
+      dmesg = subprocess.Popen(['grep','can'], stdin=process.stdout, stdout=subprocess.PIPE)
+      process.wait()
+      out, err = output = dmesg.communicate()
+      if len(out) > 0:
+        if type(out) == bytes:
+          out = out.decode()
+        devices = re.findall("([v]*can[0-9]*):", out)
+        for device in devices:
+          if device == "vcan":
+            device = "vcan0"
+          if not device in tmpDevicesList:
+            tmpDevicesList[device] = {"name":"%s"%device, "label":"%s"%device, "builtin":True, "port":device, "ref":device, "permanent":False, "active":False}
+            self.knownDevices.append({"name":"%s"%device, "interfaces":[{"type":"can", "mode":"builtincan", "label":device}], "ref":device,"builtin":True})
     self.devices = tmpDevicesList
 
 
   def autoMountBuiltInInterfaces(self):
-    for knownDevice in self.knownDevices:
-      if knownDevice['builtin'] == True:
-        for device in self.devices:
-          if self.devices[device]["ref"] in knownDevice['ref']:
-            self.devices[device]['builtin'] = True
-            self.activateDevice(device, checkAltName = True)
+    for device in self.devices:
+      if self.devices[device]['builtin'] == True:
+        logging.debug("Connecting %s"%device)
+        self.activateDevice(device, checkAltName = True)
 
 
   def autoMountPermanentInterfaces(self):
@@ -97,6 +94,7 @@ class Interfaces:
     for permanentDevice in permanentDevices:
       for device in self.devices:
         if permanentDevice["autoconnect"] == self.devices[device]["ref"]:
+          logging.debug("Connecting permanent %s"%device)
           self.devices[device]['label'] = permanentDevice["label"]
           self.devices[device]['permanent'] = True
           self.activateDevice(device, checkAltName = True)

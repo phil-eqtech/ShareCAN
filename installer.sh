@@ -20,9 +20,11 @@ pip3 install websockets
 
 
 mongo ShareCAN --eval 'db.devices.remove({"name":"Pican Duo"})'
-mongo ShareCAN --eval 'db.devices.update({"name" : "Pican"},{"name" : "Pican", "interfaces" : [ { "type" : "can", "mode" : "builtincan", "label" : "can" } ], "ref" : "mcp251x", "builtin" : true }, true)'
-mongo ShareCAN --eval 'db.devices.update({"name" : "Peak"},{"name" : "Peak", "interfaces" : [ { "type" : "can", "mode" : "builtincan", "label" : "can" } ], "ref" : "peak_usb", "builtin" : true }, true)'
-mongo ShareCAN --eval 'db.devices.update({"name" : "Virtual CAN"},{"name" : "VCAN", "interfaces" : [ { "type" : "can", "label" : "VCAN", "mode" : "builtincan" } ], "ref" : "vcan", "builtin" : true }, true)'
+mongo ShareCAN --eval 'db.devices.remove({"name" : "Pican"})'
+mongo ShareCAN --eval 'db.devices.remove({"name" : "Peak"})'
+mongo ShareCAN --eval 'db.devices.remove({"name" : "Virtual CAN"})'
+mongo ShareCAN --eval 'db.config.remove({"autoconnect" : "vcan"})'
+
 mongo ShareCAN --eval 'db.devices.update({"name" : "Macchina M2"},{"name" : "Macchina M2", "interfaces" : [ { "type" : "can", "label" : "CAN 1", "mode" : "serial", "id" : "can1" }, { "type" : "lin", "label" : "LIN", "mode" : "serial", "id" : "lin" }, { "type" : "kln", "label" : "K-LINE", "mode" : "serial", "id" : "kline" }, { "type" : "can", "label" : "CAN 2", "mode" : "serial", "id" : "can2" } ], "ref" : "Arduino_LLC_Arduino_Due", "builtin" : false }, true)'
 mongo ShareCAN --eval 'db.devices.update({"name" : "Canable"},{"name" : "Canable", "interfaces" : [ { "type" : "can", "label" : "CAN", "mode" : "slcan", "id" : "can0" } ], "ref" : "CANtact_CANtact_dev", "builtin" : false }, true )'
 mongo ShareCAN --eval 'db.devices.update({"name" : "Nano-can"},{ "name" : "Nano-can", "interfaces" : [ { "type" : "can", "label" : "CAN", "mode" : "slcan", "id" : "can0" } ], "ref" : "FTDI_FT232R_USB_UART_", "builtin" : false, "baudrate":500000 }, true)'

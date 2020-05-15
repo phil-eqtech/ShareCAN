@@ -75,7 +75,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     self.appSignals = CustomSignals()
     self.interfaces = Interfaces(self.config, self.appSignals)
-
+    logging.debug("------------------------------------")
     self.signalFrameSrc = None
 
     self.activeWindows = {}

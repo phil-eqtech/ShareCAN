@@ -59,7 +59,6 @@ class ReplayDialog(ModelDialog):
     self.timer = None
     self.feedback = REPLAY.FEEDBACK_NONE
 
-
     self.replayCurrentFrame = 0
     self.replayIsPaused = False
 
