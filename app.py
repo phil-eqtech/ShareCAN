@@ -1135,7 +1135,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Load frames
         framesCursor = self.db.frames.find({"session": self.session['id']}, {"_id":0})
         if framesCursor.count() > 0:
-          progress = self.openProgressDialog("LOAD_SESSION","LOAD_SESSION_DETAILS",framesCursor.count())
+          count_ = framesCursor.count()
+          progress = self.openProgressDialog("LOAD_SESSION","LOAD_SESSION_DETAILS",count_)
           i = 1
           self.session['mode'] = SESSION_MODE.RECORDING
           for frame in framesCursor:
