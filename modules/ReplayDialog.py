@@ -84,7 +84,7 @@ class ReplayDialog(ModelDialog):
         busName = frame['presetLabel']
       else:
         busName = "%s : %s"%(frame['busName'],frame['presetLabel'])
-      logging.debug("Checking for bus %s (%s)"%(busName, frame['preset'])
+      logging.debug("Checking for bus %s (%s)"%(busName, frame['preset']))
       if frame['type'] in REPLAY.SUPPORTED_BUS_TYPE and not busName in self.requiredBus:
         logging.debug("Bus %s is not on the requiredBus"%busName)
         busCursor = self.db.bus.find({"hash":frame['preset']},{"_id":0})
