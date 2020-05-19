@@ -182,7 +182,7 @@ class ECUMapDialog(ModelDialog):
       self.currentId += 1
 
     self.threadStopManager['scan'].set()
-
+    logging.debug("SCAN RESULT %s"%self.scanResult)
     if self.feedback >= REPLAY.FEEDBACK_RECORD:
       self.appSignals.startSessionForensic.emit(True)
     elif self.feedback == REPLAY.FEEDBACK_LIVE:
@@ -197,14 +197,21 @@ class ECUMapDialog(ModelDialog):
       maxValue = SCAN.QUICK_MODE_MAX_SUBFUNCTION
     else:
       maxValue = SCAN.STANDAD_MODE_MAX_SUBFUNCTION
-    ecuDefaultSession = self.udsRequest([0x02, 0x10, currentSession])
+    ecuDefaultSession = self.udsRequest([0x02, 0x3E, 00]) #, currentSession])
 
     if ecuDefaultSession:
       self.scanResult[self.currentId] = {"listen": self.currentId, "reply": ecuDefaultSession['id'],
                                           "session": [currentSession], "name":"ECU #"}
-      ecuName = self.udsRequest([0x02, 0x09, 0x0A])
-      if ecuName:
-        self.scanResult[self.currentId]['name'] = "OBD2 name"
+      # If ECU name is not known, trying an OBD2 request
+      ecuCursor = self.db.ecu.find({"id":self.currentId,"name":{"$exists":True}},{"_id":0})
+      if ecuCursor.count() > 0:
+        self.scanResult[self.currentId]['name'] = "ECU name in DB"
+      else:
+        ecuName = self.udsRequest([0x02, 0x09, 0x0A])
+        if ecuName and ecuName['error'] != True:
+          self.scanResult[self.currentId]['name'] = "OBD2 name"
+        else:
+          self.scanResult[self.currentId]['name'] = hex(self.currentId)[2:]
 
       if SCAN.SERVICE_TESTER in self.services and not self.threadStopManager['scan'].isSet():
         testerPresent =  self.udsRequest([0x02, 0x3E, 0x00])
@@ -248,6 +255,15 @@ class ECUMapDialog(ModelDialog):
       waitTime = SCAN.WAIT_TIME_ISOTP
     else:
       waitTime = SCAN.WAIT_TIME
+    """if self.feedback > REPLAY.FEEDBACK_NONE:
+      f_ = {}
+      f_['id'] = self.currentId
+      f_['msg'] = msg
+      f_['ts'] = time.time()
+      logging.debug(self.iface)
+      f_['preset'] = self.iface['hash']
+      f_['presetLabel'] = self.iface['presetLabel']
+      self.appSignals.frameRecv.emit({"msg":f_})"""
     self.iface.request({"id":self.currentId, "msg":msg}, mode=self.scanMode, padding=self.padding)
     if self.iface.requestIsPositive.wait(waitTime):
       return self.iface.response

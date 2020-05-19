@@ -926,11 +926,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
           a = "."
         if msg['bytes'][i]['isChanged'] == True or (msg['bytes'][i]['prevByte'] != msg['bytes'][i]['value'] and msg['bytes'][i]['lastChange'] + FRAME_CHANGE_TIME > timer):
-          msg['msgColored'] += "<span style='color:#FF0000'>%s</span> "%b
-          msg['ascii'] += "<span style='color:#FF0000'>%s</span>"%a
+          msg['msgColored'] += "<span style='color:#000000'>%s</span> "%b
+          msg['ascii'] += "<span style='color:#000000'>%s</span>"%a
         else:
-          msg['msgColored'] += "%s "%b
-          msg['ascii'] += a
+          msg['msgColored'] += "<span style='color:#A2A2A2'>%s</span> "%b
+          msg['ascii'] += "<span style='color:#E2E2E2'>%s</span>"%a
 
       if not( self.maskStatic != False and msg['lastChange'] + self.maskStatic < timer and self.session['mode'] > SESSION_MODE.IDLE):
         self.frameModel.addElt(msg)

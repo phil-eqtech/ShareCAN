@@ -163,11 +163,13 @@ class BusCAN:
     isValid = False
     if self.wish['mode'] < SCAN.MODE_SMART:
       if msg.arbitration_id == self.wish['id'] + UDS.REPLY_ID_INCREMENT:
+        logging.debug("REQUEST : Get reply %s"%msg)
         self.analyseUDSMsg(msg)
       else:
         return False
     else:
       if (msg.data[0] <= 0x08 and msg.data[1] == UDS.ERROR_CODE and msg.data[2] == self.wish['msg'][1]) or ((msg.data[0] <= 0x08 or msg.data[0] & 0xF0 == 0x10) and msg.data[1] == self.wish['msg'][1] + UDS.REPLY_VALID_SERVICE):
+        logging.debug("REQUEST : Get reply %s"%msg)
         self.analyseUDSMsg(msg)
       else:
         return False
